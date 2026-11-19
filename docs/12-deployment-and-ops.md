@@ -224,5 +224,7 @@ After that, every push to `main` redeploys. A free Space sleeps after two days w
 
 **GitHub Codespaces.** *Code → Codespaces → Create codespace on main* builds the same container ([`.devcontainer`](../.devcontainer/devcontainer.json)) and opens port 7860. Others can reach it only if you set the port's visibility to *Public* in the *Ports* tab. Codespaces stop after 30 idle minutes and count against your monthly free hours.
 
-**Locally.** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`.
+**On a laptop.** `npm run demo` ([`scripts/demo.mjs`](../scripts/demo.mjs)) does the same without Docker on Windows, macOS or Linux: builds everything, creates the Python environment and model on the first run, loads fresh sample data and serves http://localhost:7860. `npm run demo -- --public` first opens a Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` address that works while the command runs; use that address on every device, including the laptop, because sign-in redirects go there. Quick tunnels need no account but have no uptime guarantee, and some networks block them.
+
+**Docker.** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`.
 

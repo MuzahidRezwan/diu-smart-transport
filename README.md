@@ -6,11 +6,18 @@ Bus transport for Daffodil International University: an authority dashboard, a s
 
 ## Live demo
 
-The whole system (dashboard, student/faculty app, ML model) with sample data, in one container:
+The whole system (dashboard, student/faculty app, ML model) with sample data, on one port:
 
+- **Your computer, one command** (Node 22 and Python 3.11+, Windows/macOS/Linux):
+  ```bash
+  git clone https://github.com/MuzahidRezwan/diu-smart-transport && cd diu-smart-transport
+  npm run demo                 # then open http://localhost:7860
+  npm run demo -- --public     # also prints a public https://….trycloudflare.com link for others
+  ```
+  The first run installs and trains the model (a few minutes); later runs start in about a minute. The public link works while the command keeps running.
 - **Hugging Face Space** (permanent public link): published by the [Deploy demo](.github/workflows/deploy-demo.yml) workflow once the `HF_TOKEN` secret is set ([setup](docs/12-deployment-and-ops.md#1213-public-demo)).
 - **GitHub Codespaces** (no extra account): [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MuzahidRezwan/diu-smart-transport?quickstart=1). The demo opens on port 7860 after the first build (about 5 minutes).
-- **Your own machine:** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`, then http://localhost:7860.
+- **Docker:** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`, then http://localhost:7860.
 
 Sign in as the transport office with *Fill in* on the login page (`710215` / `diu-demo-2026`, no 2FA in the demo), or as a rider with `232-35-797` (student) or `710410` (faculty) on the stand-in university page. Sign-in and payments are simulated, and the data resets when the demo restarts.
 
