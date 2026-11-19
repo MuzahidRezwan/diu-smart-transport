@@ -18,6 +18,8 @@ const EnvSchema = z.object({
 
   DATABASE_URL: z.string().optional(),
   ADMIN_DATABASE_URL: z.string().optional(),
+  /** Role that owns the schema and runs migrations (diu_migrator). Defaults to DATABASE_URL. */
+  MIGRATION_DATABASE_URL: z.string().optional(),
   PGLITE_DIR: z.string().optional(),
 
   JWT_SECRET: z.string().min(32).optional(),

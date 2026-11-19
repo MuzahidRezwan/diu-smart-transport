@@ -19,6 +19,7 @@ export async function buildContext(
   const database = await connect({
     databaseUrl: config.DATABASE_URL,
     adminDatabaseUrl: config.ADMIN_DATABASE_URL,
+    migrationDatabaseUrl: config.MIGRATION_DATABASE_URL,
     pgliteDir: config.PGLITE_DIR ?? './.data/pglite',
     migrate: opts.migrate ?? true,
   });

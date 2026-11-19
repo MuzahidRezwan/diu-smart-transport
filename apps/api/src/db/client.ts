@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { sql } from 'drizzle-orm';
 import type { PgDatabase } from 'drizzle-orm/pg-core';
 import * as schema from './schema.js';
 
@@ -15,13 +17,35 @@ export interface Database {
 }
 
 export const MIGRATIONS_DIR = fileURLToPath(new URL('../../drizzle', import.meta.url));
+const GRANTS_FILE = fileURLToPath(new URL('../../drizzle/grants.sql', import.meta.url));
+
+/**
+ * Re-applies table grants for the production roles (drizzle/grants.sql).
+ * Skipped when the roles do not exist, as in development and tests.
+ */
+export async function applyGrants(db: DB): Promise<boolean> {
+  const res = await db.execute(sql`select rolname from pg_roles where rolname in ('diu_app', 'transport_admin', 'diu_reporting')`);
+  if ((res as unknown as { rows: unknown[] }).rows.length < 3) return false;
+  const statements = readFileSync(GRANTS_FILE, 'utf8')
+    .split('\n').filter((line) => !line.trim().startsWith('--')).join('\n')
+    .split(';').map((s) => s.trim()).filter(Boolean);
+  for (const statement of statements) await db.execute(sql.raw(statement));
+  return true;
+}
 
 /**
  * DATABASE_URL set   -> PostgreSQL through node-postgres.
  * DATABASE_URL unset -> embedded PGlite (Postgres in WASM) for local development
  *                       and tests; data lives in PGLITE_DIR or in memory.
  */
-export async function connect(opts: { databaseUrl?: string; adminDatabaseUrl?: string; pgliteDir?: string; migrate?: boolean }): Promise<Database> {
+export async function connect(opts: {
+  databaseUrl?: string;
+  adminDatabaseUrl?: string;
+  /** Owner role for DDL (diu_migrator). Defaults to databaseUrl, as in a single-user setup. */
+  migrationDatabaseUrl?: string;
+  pgliteDir?: string;
+  migrate?: boolean;
+}): Promise<Database> {
   if (opts.databaseUrl) {
     const { Pool } = await import('pg');
     const { drizzle } = await import('drizzle-orm/node-postgres');
@@ -33,7 +57,18 @@ export async function connect(opts: { databaseUrl?: string; adminDatabaseUrl?: s
     const adminDb = adminPool === pool ? db : (drizzle(adminPool, { schema }) as unknown as DB);
     if (opts.migrate) {
       const { migrate } = await import('drizzle-orm/node-postgres/migrator');
-      await migrate(drizzle(pool, { schema }), { migrationsFolder: MIGRATIONS_DIR });
+      const ownerPool = new Pool({ connectionString: opts.migrationDatabaseUrl ?? opts.databaseUrl, max: 1 });
+      try {
+        const owner = drizzle(ownerPool, { schema }) as unknown as DB;
+        await migrate(owner as never, { migrationsFolder: MIGRATIONS_DIR });
+        await applyGrants(owner);
+      } catch (err) {
+        await Promise.all([pool.end(), adminPool !== pool ? adminPool.end() : undefined]);
+        const hint = opts.migrationDatabaseUrl ? '' : ' If DATABASE_URL is a restricted role (diu_app), set MIGRATION_DATABASE_URL to the diu_migrator role.';
+        throw new Error(`Database migration failed: ${(err as Error).message}.${hint}`, { cause: err });
+      } finally {
+        await ownerPool.end();
+      }
     }
     return {
       db,
