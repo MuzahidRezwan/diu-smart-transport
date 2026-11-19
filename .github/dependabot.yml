@@ -6,19 +6,30 @@ updates:
     open-pull-requests-limit: 5
     groups:
       minor-and-patch: { update-types: [minor, patch] }
+    ignore:
+      # Version 6 needs Vite 8; upgrade both together.
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: [version-update:semver-major]
+
+  # Expo pins React Native and every native module per SDK, and CI cannot
+  # catch a native mismatch (it only typechecks). Upgrade the mobile app with
+  # "npx expo install --fix" when moving SDKs. Security updates still arrive.
   - package-ecosystem: npm
     directory: /apps/mobile
     schedule: { interval: monthly }
-    # Expo pins native modules per SDK; upgrade with "npx expo install --fix" instead.
-    ignore:
-      - dependency-name: "*"
-        update-types: [version-update:semver-major]
+    open-pull-requests-limit: 0
+
   - package-ecosystem: pip
     directory: /services/ml
     schedule: { interval: weekly }
+    ignore:
+      # PuLP 4 drops the bundled CBC solver; see services/ml/requirements.txt.
+      - dependency-name: pulp
+        versions: [">=4"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
-  - package-ecosystem: docker
-    directory: /services/ml
-    schedule: { interval: monthly }
+
+# The ML image's Python version is changed by hand together with the CI job,
+# once scikit-learn, pandas and PuLP publish wheels for the new version.
