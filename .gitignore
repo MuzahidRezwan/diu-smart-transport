@@ -25,6 +25,8 @@ coverage/
 .env.*
 !.env.example
 !**/.env.example
+!.env.*.example
+!**/.env.*.example
 *.pem
 *.key
 *.crt
@@ -50,6 +52,8 @@ GoogleService-Info.plist
 .data/
 *.dump
 *.sql.gz
+*.dump.gpg
+backups/
 .npmrc
 .pypirc
 .netrc

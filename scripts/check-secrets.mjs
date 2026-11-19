@@ -17,16 +17,17 @@ import { readFileSync, statSync } from 'node:fs';
 
 const mode = process.argv[2] ?? '--staged';
 
-/** File names that must never be committed. `.env.example` is the only env file allowed. */
+/** File names that must never be committed. Only placeholder env files ending in `.example` are allowed. */
 const FORBIDDEN_FILES = [
-  { re: /(^|\/)\.env(\.(?!example$)[^/]+)?$/, why: 'environment file with real values (commit .env.example instead)' },
+  { re: /(^|\/)\.env(\.(?![^/]*example$)[^/]+)?$/, why: 'environment file with real values (commit .env.example instead)' },
   { re: /\.(pem|key|p12|pfx|jks|keystore|der|ppk|mobileprovision)$/i, why: 'private key / certificate store' },
   { re: /(^|\/)id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/, why: 'SSH key' },
   { re: /(^|\/)(credentials|service-account)[^/]*\.json$/i, why: 'cloud credentials file' },
   { re: /firebase-adminsdk[^/]*\.json$/i, why: 'Firebase admin service account' },
   { re: /(^|\/)(google-services\.json|GoogleService-Info\.plist)$/, why: 'Firebase app config (keep out of a public repo)' },
   { re: /(^|\/)(\.npmrc|\.pypirc|\.netrc)$/, why: 'package registry / login credentials' },
-  { re: /\.(sqlite3?|db|dump)$/i, why: 'database dump (may contain personal data)' },
+  { re: /\.(sqlite3?|db|dump|dump\.gpg|sql\.gz)$/i, why: 'database dump (may contain personal data)' },
+  { re: /(^|\/)backups\//i, why: 'backup folder (may contain personal data)' },
 ];
 
 /** Content patterns that are almost always a real secret. */
