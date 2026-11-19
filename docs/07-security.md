@@ -56,6 +56,7 @@ Other rules:
 - Success/fail redirect pages never change state; only the verified IPN does.
 - Store credentials live in the secret store; sandbox and live credentials are separate environments.
 - Refunds require `payments.refund` permission and are audit-logged.
+- **Payment report exports** (`GET /admin/payments/export?from=&to=&status=&method=&format=xlsx|csv`) need `payments.export`, are limited to 93 days per file, contain only the columns listed in FR-5.9, and write an audit row (who, period, filters, row count). CSV cells are quoted and any cell starting with `=`, `+`, `-` or `@` is prefixed with `'` so a name can never run as a spreadsheet formula (CSV injection). The Excel file carries a Summary sheet with the exporter's name and the period.
 
 ## 7.5 Data protection & privacy
 
