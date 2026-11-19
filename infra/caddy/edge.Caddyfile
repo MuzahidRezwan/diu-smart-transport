@@ -1,0 +1,16 @@
+# Public entry point: HTTPS certificates (Let's Encrypt) and routing.
+# Used by the "edge" profile in docker-compose.yml:
+#   docker compose --profile edge up -d
+# Point both DNS names at this machine first.
+
+{$WEB_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:80
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+	# Caddy replaces any X-Forwarded-For sent by the client, so the API's
+	# rate limits see the real address (the API trusts exactly one proxy hop).
+	reverse_proxy api:4000
+}

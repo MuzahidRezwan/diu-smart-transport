@@ -1,6 +1,7 @@
 # One-machine deployment (MVP / staging).
 #   cp .env.example .env    # fill in every value
-#   docker compose up -d --build
+#   docker compose up -d --build                    # app on 127.0.0.1:8080 and :4000
+#   docker compose --profile edge up -d --build     # plus HTTPS on 80/443
 # Real values live only in .env (git-ignored).
 name: diu-transport
 
@@ -46,7 +47,8 @@ services:
       ml:
         condition: service_healthy
     ports:
-      - "4000:4000"
+      # Loopback only: the public entry is the edge proxy (or your own).
+      - "127.0.0.1:4000:4000"
 
   jobs:
     build:
@@ -74,8 +76,25 @@ services:
         VITE_API_URL: ${PUBLIC_API_URL:?set PUBLIC_API_URL in .env}
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
+
+  edge:
+    image: caddy:2-alpine
+    profiles: [edge]
+    restart: unless-stopped
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:-}
+      API_DOMAIN: ${API_DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./infra/caddy/edge.Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [web, api]
 
 volumes:
   pgdata:
   models:
+  caddy_data:
