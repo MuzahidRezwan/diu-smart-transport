@@ -12,7 +12,7 @@ This repository is **public**. Passwords, API keys, payment-gateway credentials,
 
 ### Four layers stop a leak
 
-1. **`.gitignore`** ignores `.env*` (except `.env.example`), keys (`*.pem`, `*.key`, `*.p12`, `*.jks`…), service-account JSON, Firebase config, database dumps and registry credentials.
+1. **`.gitignore`** ignores `.env*` (except placeholder files ending in `.example`, such as `.env.example` and `.env.api.example`), keys (`*.pem`, `*.key`, `*.p12`, `*.jks`…), service-account JSON, Firebase config, database dumps and encrypted backups (`backups/`), ML training exports and registry credentials.
 2. **pre-commit hook** (`.githooks/pre-commit`) runs `scripts/check-secrets.mjs --staged` and blocks a commit that adds a forbidden file or a value that looks like a real secret (private keys, GitHub/AWS/Google tokens, JWTs, `*_SECRET=...` / `*_PASSWORD=...` with a real-looking value, database URLs with a password for a non-local host).
 3. **pre-push hook** (`.githooks/pre-push`) scans **every line in the whole history** before anything is pushed.
 4. **CI** runs the same scanner plus [gitleaks](https://github.com/gitleaks/gitleaks) on every push and pull request. GitHub **secret scanning + push protection** should be on in the repository settings.
@@ -33,6 +33,7 @@ npm run secrets:check
 
 - Never commit real student/faculty data, payment exports, database dumps or screenshots that show real IDs. Use the synthetic data generator in `services/ml` and the seed script in `apps/api`.
 - Payment exports (Excel/CSV) downloaded from the dashboard stay on the finance office's machines.
+- Database backups (`scripts/backup-db.sh`) are encrypted to a public key and stay on the server and its off-site copy. ML training exports (`npm run ml:export`) are pseudonymised but still personal data; delete them after training. The guard refuses both.
 
 ## Reporting a vulnerability
 
