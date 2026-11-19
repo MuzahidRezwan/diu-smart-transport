@@ -118,13 +118,13 @@ The busy window is computed in [`packages/shared/src/time.ts`](../packages/share
 The transport office must not see riders' personal records ([07-security.md](07-security.md#authority-data-boundary-no-profile-access-no-impersonation)). The database enforces this on its own, so a bug in the API is not enough to break it:
 
 - **`transport_riders` view** (migration `0001_privacy_boundary.sql`) is the only rider data the office can read: user ID, university ID, name, rider type, fee category, home route and current card status. No phone, email, department, batch, section, teacher initial or photo.
-- **Separate database roles** ([`drizzle/roles.sql`](../apps/api/drizzle/roles.sql)):
+- **Separate database roles** ([`drizzle/roles.sql`](../apps/api/drizzle/roles.sql), grants in [`drizzle/grants.sql`](../apps/api/drizzle/grants.sql)):
 
 | Role | Used by | Can | Cannot |
 |---|---|---|---|
-| `diu_migrator` | Migrations only | Own the schema | Not used at runtime |
+| `diu_migrator` | Migrations only (`MIGRATION_DATABASE_URL`) | Own the schema; apply grants | Not used for requests |
 | `diu_app` | Rider-facing API | Read/write app tables | Update or delete `audit_logs` |
-| `transport_admin` | Authority endpoints (`ADMIN_DATABASE_URL`) | Fleet, schedule, cards, passes, notices, tickets, settings; `SELECT, UPDATE` on payments; selected columns of `users` | Any access to `user_profiles` or `device_tokens`; other columns of `users`; changing `audit_logs` |
+| `transport_admin` | Authority endpoints (`ADMIN_DATABASE_URL`) | Fleet, schedule, cards, passes, notices, tickets, settings; `SELECT, UPDATE` on payments; identity columns of `users` (ID, name, role, category, home route, active, last login), adding people and setting a home route | Any access to `user_profiles` or `device_tokens`; changing `audit_logs` |
 | `diu_reporting` | Read replica / BI | Read allocations, predictions, boarding, payments, routes, the privacy view | Anything else |
 
 ## 4.4 Important indexes and constraints
@@ -160,6 +160,7 @@ The transport office must not see riders' personal records ([07-security.md](07-
 | `0000_init.sql` | All tables, enums and indexes |
 | `0001_privacy_boundary.sql` | `transport_riders` view and the append-only trigger on `audit_logs` |
 | `0002_ticket_number_sequences.sql` | Sequences for ticket numbers, continuing after any numbers already issued |
-| `roles.sql` | Database roles and grants. Run once by a DBA after migrations; not part of the automatic migration run. |
+| `roles.sql` | Creates `diu_migrator`, `diu_app`, `transport_admin`, `diu_reporting` and default privileges. Run once as a superuser **before** the first migration (idempotent). Docker compose runs it automatically on first start. |
+| `grants.sql` | Table and column grants for those roles. The API applies it after every migration run, as the owner, whenever the roles exist. |
 
-Change the schema in `schema.ts`, then `npm run db:generate` creates the next migration. The API applies pending migrations at startup; the job worker never does.
+Change the schema in `schema.ts`, then `npm run db:generate` creates the next migration. If the new table should be visible to the transport office, add it to `grants.sql` (the authority role gets nothing by default). The API applies pending migrations at startup with `MIGRATION_DATABASE_URL`; the job worker never does. CI runs the API tests on PostgreSQL with these roles, so a missing grant fails the build.

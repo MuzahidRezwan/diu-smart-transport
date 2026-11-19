@@ -59,7 +59,7 @@ Metric definitions (`app/model.py:evaluate`):
 
 ## 6.6 Retraining
 
-* Weekly (Saturday night) on all scans of the current and previous semester; `python -m app.train --input export.json`.
+* Weekly (Saturday night) on the last 120 days of scans: `npm run ml:export` (API) writes the pseudonymised training file, then `python -m app.train --input training-export.json`. Commands for the docker deployment are in [12.9](12-deployment-and-ops.md#129-ml-retraining). Training refuses to run with fewer than 44 days of scans and keeps the current model.
 * The nightly forecast job (05:30 Dhaka) predicts today + 7 days; a second run at 13:00 updates the evening trips.
 * New routine activated → forecast re-run immediately.
 * Drift check: if last week's WAPE is 1.5× the back-test WAPE, alert and fall back to the baseline.
