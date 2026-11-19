@@ -18,6 +18,12 @@ export const forbidden = (message = 'You do not have permission for this') => ne
 export const notFound = (what = 'Resource') => new HttpError(404, 'not_found', `${what} not found`);
 export const conflict = (message: string, details?: unknown) => new HttpError(409, 'conflict', message, details);
 export const unprocessable = (message: string, details?: unknown) => new HttpError(422, 'unprocessable', message, details);
+/** A university system we depend on (SSO, directory, gateway) is down or slow. */
+export function upstreamUnavailable(service: string, cause?: unknown): HttpError {
+  const err = new HttpError(503, 'upstream_unavailable', `${service} is not reachable right now. Try again in a few minutes.`);
+  if (cause !== undefined) err.cause = cause; // logged, never sent to the client
+  return err;
+}
 
 /** Parses input with a zod schema; a failure becomes a 400 with field messages. */
 export function parse<S extends ZodTypeAny>(schema: S, value: unknown): z.output<S> {
@@ -33,6 +39,7 @@ export const notFoundHandler: RequestHandler = (_req, _res, next) => next(notFou
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const requestId = (req as { id?: string }).id;
   if (err instanceof HttpError) {
+    if (err.status >= 500) req.log?.warn({ err }, err.message);
     res.status(err.status).json({ error: { code: err.code, message: err.message, details: err.details, requestId } });
     return;
   }

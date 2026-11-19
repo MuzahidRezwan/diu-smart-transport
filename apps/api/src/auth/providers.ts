@@ -7,7 +7,7 @@
  */
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { UserCategory } from '@diu/shared';
-import { badRequest, unauthorized } from '../lib/errors.js';
+import { badRequest, unauthorized, upstreamUnavailable } from '../lib/errors.js';
 
 export interface SsoIdentity {
   universityId: string;
@@ -53,12 +53,15 @@ export class OidcProvider implements SsoProvider {
   constructor(private readonly opts: { issuer: string; clientId: string; clientSecret: string; scopes: string; idClaim: string }) {}
 
   private meta(): Promise<Discovery> {
-    this.discovery ??= fetch(`${this.opts.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`)
+    this.discovery ??= fetch(`${this.opts.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`, { signal: AbortSignal.timeout(8000) })
       .then(async (r) => {
         if (!r.ok) throw new Error(`OIDC discovery failed: ${r.status}`);
         return (await r.json()) as Discovery;
       })
-      .catch((err) => { this.discovery = undefined; throw err; });
+      .catch((err) => {
+        this.discovery = undefined;
+        throw upstreamUnavailable('University sign-in', err);
+      });
     return this.discovery;
   }
 
@@ -80,6 +83,7 @@ export class OidcProvider implements SsoProvider {
   async exchange(p: { code: string; codeVerifier: string; redirectUri: string }): Promise<SsoIdentity> {
     const m = await this.meta();
     const res = await fetch(m.token_endpoint, {
+      signal: AbortSignal.timeout(8000),
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
       body: new URLSearchParams({
@@ -90,7 +94,8 @@ export class OidcProvider implements SsoProvider {
         client_id: this.opts.clientId,
         client_secret: this.opts.clientSecret,
       }),
-    });
+    }).catch((err) => { throw upstreamUnavailable('University sign-in', err); });
+    if (res.status >= 500) throw upstreamUnavailable('University sign-in');
     if (!res.ok) throw unauthorized('The university sign-in did not complete. Try again.');
     const body = (await res.json()) as { id_token?: string };
     if (!body.id_token) throw unauthorized('The university sign-in returned no identity.');
@@ -134,9 +139,9 @@ export class HttpDirectory implements UniversityDirectory {
     const res = await fetch(`${this.baseUrl.replace(/\/$/, '')}/people/${encodeURIComponent(universityId)}`, {
       headers: { authorization: `Bearer ${this.token}`, accept: 'application/json' },
       signal: AbortSignal.timeout(8000),
-    });
+    }).catch((err) => { throw upstreamUnavailable('University directory', err); });
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`University directory error ${res.status}`);
+    if (!res.ok) throw upstreamUnavailable('University directory', new Error(`HTTP ${res.status}`));
     return (await res.json()) as DirectoryPerson;
   }
 }

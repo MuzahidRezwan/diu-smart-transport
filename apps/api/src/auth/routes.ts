@@ -71,8 +71,20 @@ export function authRouter(ctx: AppContext): Router {
 
     const code = ctx.sso.mode === 'mock' && q.mock_id ? `mock.${q.mock_id.trim()}` : q.code;
     if (!code) return fail('missing_code');
-    const identity = await ctx.sso.exchange({ code, codeVerifier: st.verifier, redirectUri: callbackUrl });
-    const person = await ctx.directory.lookup(identity.universityId);
+    // The browser landed here, so failures become a redirect with a reason, not a JSON page.
+    let identity: Awaited<ReturnType<typeof ctx.sso.exchange>>;
+    let person: Awaited<ReturnType<typeof ctx.directory.lookup>>;
+    try {
+      identity = await ctx.sso.exchange({ code, codeVerifier: st.verifier, redirectUri: callbackUrl });
+      person = await ctx.directory.lookup(identity.universityId);
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 503) {
+        req.log?.warn({ err }, 'university system unavailable during sign-in');
+        return fail('university_unavailable');
+      }
+      if (err instanceof HttpError && err.status === 401) return fail('sign_in_failed');
+      throw err;
+    }
     if (!person) return fail('not_in_directory');
 
     // Upsert identity and the rider's own profile. Profile goes to its own table.
