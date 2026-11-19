@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import type { PgDatabase } from 'drizzle-orm/pg-core';
@@ -82,6 +83,8 @@ export async function connect(opts: {
 
   const { PGlite } = await import('@electric-sql/pglite');
   const { drizzle } = await import('drizzle-orm/pglite');
+  // PGlite creates its own folder but not the parents (.data/ is missing in a fresh clone).
+  if (opts.pgliteDir && !opts.pgliteDir.includes('://')) mkdirSync(dirname(opts.pgliteDir), { recursive: true });
   const client = new PGlite(opts.pgliteDir);
   const pg = drizzle(client, { schema });
   if (opts.migrate ?? true) {
