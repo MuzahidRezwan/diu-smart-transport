@@ -1,0 +1,81 @@
+# One-machine deployment (MVP / staging).
+#   cp .env.example .env    # fill in every value
+#   docker compose up -d --build
+# Real values live only in .env (git-ignored).
+name: diu-transport
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: diu_transport
+      POSTGRES_USER: diu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U diu -d diu_transport"]
+      interval: 10s
+      retries: 10
+
+  ml:
+    build: services/ml
+    restart: unless-stopped
+    environment:
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:?set ML_SERVICE_TOKEN in .env}
+      ALLOWED_FETCH_HOSTS: ${ALLOWED_FETCH_HOSTS:-daffodilvarsity.edu.bd,diu.edu.bd}
+    volumes:
+      - models:/srv/artifacts
+    # Internal only: no published port.
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://diu:${POSTGRES_PASSWORD}@postgres:5432/diu_transport
+      ML_SERVICE_URL: http://ml:8000
+      TRUST_PROXY: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+
+  jobs:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    command: ["node", "dist/jobs/worker.js"]
+    # The image's healthcheck probes the HTTP port, which the worker does not open.
+    healthcheck:
+      disable: true
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://diu:${POSTGRES_PASSWORD}@postgres:5432/diu_transport
+      ML_SERVICE_URL: http://ml:8000
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${PUBLIC_API_URL:?set PUBLIC_API_URL in .env}
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
+  models:
