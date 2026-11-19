@@ -3,13 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { dhakaMinutes, formatClock } from '@diu/shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { addDays, dayLabel, todayDhaka } from '../../lib/format';
+import { addDays, dayLabel, isFriday, todayDhaka } from '../../lib/format';
 import type { ScheduleSlot } from '../../lib/types';
 import { BusChip, ErrorNote, Loading, Pill, Segmented } from '../../components/ui';
 
 export function SchedulePage() {
   const { me } = useAuth();
   const today = todayDhaka();
+  let nextDay = addDays(today, 1);
+  while (isFriday(nextDay)) nextDay = addDays(nextDay, 1); // Friday is the weekly holiday
   const [date, setDate] = useState(today);
   const [service, setService] = useState<'student' | 'faculty'>(me?.role === 'student' ? 'student' : 'faculty');
   const q = useQuery({ queryKey: ['my-schedule', date, service], queryFn: () => api<{ slots: ScheduleSlot[]; closed: string | null; canSeeBuses: boolean }>('/me/schedule', { query: { date, audience: service } }) });
@@ -26,7 +28,7 @@ export function SchedulePage() {
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <Segmented label="Day" value={date} onChange={setDate} options={[[today, 'Today'], [addDays(today, 1), dayLabel(addDays(today, 1))]]} />
+        <Segmented label="Day" value={date} onChange={setDate} options={[[today, 'Today'], [nextDay, dayLabel(nextDay)]]} />
         {me?.role !== 'student' && <Segmented label="Service" value={service} onChange={setService} options={[['faculty', 'Faculty'], ['student', 'Student']]} />}
       </div>
       {q.isLoading ? <Loading /> : q.error ? <ErrorNote error={q.error} /> : q.data!.closed ? <div className="card"><b>No service: {q.data!.closed}</b></div> : (
