@@ -12,12 +12,15 @@ import { ALL_PERMISSIONS } from '@diu/shared';
 import { noopRealtime, type AppContext } from './context.js';
 import { logger } from './logger.js';
 
-export async function buildContext(config: Config = loadConfig(process.env, (m) => logger.warn(m))): Promise<{ ctx: AppContext; database: Database }> {
+export async function buildContext(
+  config: Config = loadConfig(process.env, (m) => logger.warn(m)),
+  opts: { migrate?: boolean } = {},
+): Promise<{ ctx: AppContext; database: Database }> {
   const database = await connect({
     databaseUrl: config.DATABASE_URL,
     adminDatabaseUrl: config.ADMIN_DATABASE_URL,
     pgliteDir: config.PGLITE_DIR ?? './.data/pglite',
-    migrate: true,
+    migrate: opts.migrate ?? true,
   });
   const ctx: AppContext = {
     config,
@@ -34,7 +37,7 @@ export async function buildContext(config: Config = loadConfig(process.env, (m) 
     push: config.PUSH_PROVIDER === 'expo' ? new ExpoPushSender(config.EXPO_ACCESS_TOKEN) : new ConsolePushSender((m) => logger.info(m)),
     realtime: noopRealtime,
   };
-  await ensureBootstrapAdmin(ctx);
+  if (opts.migrate ?? true) await ensureBootstrapAdmin(ctx);
   return { ctx, database };
 }
 

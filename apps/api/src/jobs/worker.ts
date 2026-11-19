@@ -7,7 +7,8 @@ import { buildContext } from '../bootstrap.js';
 import { logger } from '../logger.js';
 import { expiryTask, forecastTask, gpsRetentionTask, renewalReminderTask, routineSyncTask } from './tasks.js';
 
-const { ctx } = await buildContext();
+// Only the API server runs migrations, so two processes never migrate at once.
+const { ctx } = await buildContext(undefined, { migrate: false });
 
 const schedule: [string, string, (c: typeof ctx) => Promise<unknown>][] = [
   ['10 0 * * *', 'expiry', expiryTask],
