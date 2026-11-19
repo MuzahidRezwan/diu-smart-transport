@@ -1,0 +1,34 @@
+{
+  "name": "@diu/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DIU Smart Transport web: authority dashboard and rider portal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@diu/shared": "0.1.0",
+    "@tanstack/react-query": "^5.80.0",
+    "exceljs": "^4.4.0",
+    "leaflet": "^1.9.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.6.0",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/leaflet": "^1.9.18",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.8",
+    "typescript": "~5.9.3",
+    "vite": "^7.0.0"
+  }
+}

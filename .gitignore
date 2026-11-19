@@ -47,6 +47,7 @@ GoogleService-Info.plist
 *.sqlite
 *.sqlite3
 *.db
+.data/
 *.dump
 *.sql.gz
 .npmrc
