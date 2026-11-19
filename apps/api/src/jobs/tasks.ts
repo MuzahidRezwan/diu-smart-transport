@@ -2,7 +2,7 @@
 import { and, eq, lt, lte } from 'drizzle-orm';
 import { addDays, dhakaDate } from '@diu/shared';
 import type { AppContext } from '../context.js';
-import { authHandoffs, dayPasses, gpsPings, semesters, transportCards } from '../db/schema.js';
+import { authHandoffs, dayPasses, gpsPings, refreshTokens, semesters, transportCards } from '../db/schema.js';
 import { notify } from '../notifications/push.js';
 import { refreshForecast } from '../modules/predictions/routes.js';
 import { syncRoutineSources } from '../modules/routines/routes.js';
@@ -17,7 +17,7 @@ export async function forecastTask(ctx: AppContext) {
   return refreshForecast(ctx, dhakaDate(), 8);
 }
 
-/** 00:10 — expire cards after their semester and day passes after their date. */
+/** 00:10 — expire cards and day passes, and delete old one-time codes and refresh tokens. */
 export async function expiryTask(ctx: AppContext) {
   const today = dhakaDate();
   const cards = await ctx.db.update(transportCards).set({ status: 'expired', updatedAt: new Date() })
@@ -25,7 +25,10 @@ export async function expiryTask(ctx: AppContext) {
   const passes = await ctx.db.update(dayPasses).set({ status: 'expired' })
     .where(and(eq(dayPasses.status, 'approved'), lt(dayPasses.travelDate, today))).returning({ id: dayPasses.id });
   await ctx.db.delete(authHandoffs).where(lt(authHandoffs.expiresAt, new Date(Date.now() - 86_400_000)));
-  return { cardsExpired: cards.length, passesExpired: passes.length };
+  // A week of grace keeps reuse detection working for tokens that just expired.
+  const tokens = await ctx.db.delete(refreshTokens).where(lt(refreshTokens.expiresAt, new Date(Date.now() - 7 * 86_400_000)))
+    .returning({ id: refreshTokens.id });
+  return { cardsExpired: cards.length, passesExpired: passes.length, refreshTokensDeleted: tokens.length };
 }
 
 /** 10:00 — remind card holders 14, 7 and 1 days before the semester ends. */
