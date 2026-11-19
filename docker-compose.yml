@@ -1,8 +1,9 @@
 # One-machine deployment (MVP / staging).
-#   cp .env.example .env    # fill in every value
+#   cp .env.example .env && cp .env.api.example .env.api    # fill in every value
 #   docker compose up -d --build                    # app on 127.0.0.1:8080 and :4000
 #   docker compose --profile edge up -d --build     # plus HTTPS on 80/443
-# Real values live only in .env (git-ignored).
+# Real values live only in .env and .env.api (both git-ignored).
+# Postgres creates the least-privilege roles on first start (infra/postgres/10-roles.sh).
 name: diu-transport
 
 services:
@@ -13,8 +14,13 @@ services:
       POSTGRES_DB: diu_transport
       POSTGRES_USER: diu
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      MIGRATOR_DB_PASSWORD: ${MIGRATOR_DB_PASSWORD:?set MIGRATOR_DB_PASSWORD in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+      ADMIN_DB_PASSWORD: ${ADMIN_DB_PASSWORD:?set ADMIN_DB_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./apps/api/drizzle/roles.sql:/roles.sql:ro
+      - ./infra/postgres/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U diu -d diu_transport"]
       interval: 10s
@@ -35,11 +41,15 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.api
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://diu:${POSTGRES_PASSWORD}@postgres:5432/diu_transport
+      PUBLIC_API_URL: ${PUBLIC_API_URL}
+      MIGRATION_DATABASE_URL: postgres://diu_migrator:${MIGRATOR_DB_PASSWORD}@postgres:5432/diu_transport
+      DATABASE_URL: postgres://diu_app:${APP_DB_PASSWORD}@postgres:5432/diu_transport
+      ADMIN_DATABASE_URL: postgres://transport_admin:${ADMIN_DB_PASSWORD}@postgres:5432/diu_transport
       ML_SERVICE_URL: http://ml:8000
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN}
       TRUST_PROXY: "true"
     depends_on:
       postgres:
@@ -59,11 +69,14 @@ services:
     # The image's healthcheck probes the HTTP port, which the worker does not open.
     healthcheck:
       disable: true
-    env_file: .env
+    env_file: .env.api
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://diu:${POSTGRES_PASSWORD}@postgres:5432/diu_transport
+      PUBLIC_API_URL: ${PUBLIC_API_URL}
+      DATABASE_URL: postgres://diu_app:${APP_DB_PASSWORD}@postgres:5432/diu_transport
+      ADMIN_DATABASE_URL: postgres://transport_admin:${ADMIN_DB_PASSWORD}@postgres:5432/diu_transport
       ML_SERVICE_URL: http://ml:8000
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN}
     depends_on:
       api:
         condition: service_healthy
