@@ -30,7 +30,7 @@ export interface MeResponse {
   homeRouteId: string | null;
   card: { status: CardStatus; semester: string; expiresOn: string | null } | null;
   /** Authority accounts only. */
-  admin?: { isMainAdmin: boolean; permissions: Permission[] };
+  admin?: { isMainAdmin: boolean; permissions: Permission[]; designation?: string };
 }
 
 /** What the transport office sees about a rider: no profile fields. */
