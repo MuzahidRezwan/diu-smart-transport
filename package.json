@@ -1,0 +1,24 @@
+{
+  "name": "diu-smart-transport",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DIU Smart Transport System: web dashboard, mobile app, API and ML-based bus demand prediction for Daffodil International University",
+  "workspaces": [
+    "packages/*",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build -w @diu/shared && npm run build -w @diu/api && npm run build -w @diu/web",
+    "test": "npm run test -w @diu/shared && npm run test -w @diu/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:api": "npm run dev -w @diu/api",
+    "dev:web": "npm run dev -w @diu/web",
+    "db:generate": "npm run db:generate -w @diu/api",
+    "db:migrate": "npm run db:migrate -w @diu/api",
+    "db:seed": "npm run db:seed -w @diu/api"
+  }
+}
