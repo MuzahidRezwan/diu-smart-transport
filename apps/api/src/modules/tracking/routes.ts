@@ -31,7 +31,7 @@ const latest = new Map<string, LivePosition>();
 /** The trip a bus is on right now, from today's published allocations. */
 export async function currentTrip(db: DB, busId: string, at = new Date()) {
   const now = dhakaMinutes(at);
-  const rows = await db.select({ routeId: routes.id, routeCode: routes.code, routeName: routes.name, direction: timeSlots.direction, departureMinutes: timeSlots.departureMinutes, start: allocationBuses.windowStart, end: allocationBuses.windowEnd, timeSlotId: timeSlots.id })
+  const rows = await db.select({ routeId: routes.id, routeCode: routes.code, routeName: routes.name, routeKind: routes.kind, direction: timeSlots.direction, departureMinutes: timeSlots.departureMinutes, start: allocationBuses.windowStart, end: allocationBuses.windowEnd, timeSlotId: timeSlots.id })
     .from(allocationBuses)
     .innerJoin(allocations, eq(allocations.id, allocationBuses.allocationId))
     .innerJoin(timeSlots, eq(timeSlots.id, allocations.timeSlotId))

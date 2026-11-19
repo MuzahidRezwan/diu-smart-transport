@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { boardingScanSchema, dhakaDate } from '@diu/shared';
 import type { AppContext } from '../../context.js';
-import { boardingEvents, buses, dayPasses, semesters, transportCards, users } from '../../db/schema.js';
+import { boardingEvents, buses, dayPasses, routes, semesters, transportCards, users } from '../../db/schema.js';
 import { authenticate, requireRoles } from '../../auth/middleware.js';
 import { decrypt } from '../../lib/crypto.js';
 import { notFound, parse } from '../../lib/errors.js';
@@ -51,6 +51,11 @@ export function boardingRouter(ctx: AppContext): Router {
       const ids = { userId: row.card.userId, cardId: row.card.id, name: row.name };
       if (row.card.status !== 'active' || !row.current) return record(false, `Card is ${row.card.status}`, ids);
       if (row.card.expiresOn && row.card.expiresOn < serviceDate) return record(false, 'Card expired', ids);
+      // A card is for its home route; the shuttle is open to every card holder.
+      if (trip && trip.routeKind !== 'shuttle' && trip.routeId !== row.card.routeId) {
+        const [home] = await db.select({ name: routes.name }).from(routes).where(eq(routes.id, row.card.routeId));
+        return record(false, `Card is for the ${home?.name ?? 'another'} route`, ids);
+      }
       return record(true, null, ids);
     }
 
@@ -60,7 +65,7 @@ export function boardingRouter(ctx: AppContext): Router {
     const ids = { userId: row.pass.userId, dayPassId: row.pass.id, name: row.name };
     if (!['approved', 'used'].includes(row.pass.status)) return record(false, `Pass is ${row.pass.status}`, ids);
     if (row.pass.travelDate !== serviceDate) return record(false, `Pass is for ${row.pass.travelDate}`, ids);
-    if (trip && trip.routeId !== row.pass.routeId) return record(false, 'Pass is for another route', ids);
+    if (trip && trip.routeKind !== 'shuttle' && trip.routeId !== row.pass.routeId) return record(false, 'Pass is for another route', ids);
     if (row.pass.status === 'approved') await db.update(dayPasses).set({ status: 'used', usedAt: scannedAt }).where(and(eq(dayPasses.id, row.pass.id), sql`${dayPasses.usedAt} is null`));
     return record(true, null, ids);
   });

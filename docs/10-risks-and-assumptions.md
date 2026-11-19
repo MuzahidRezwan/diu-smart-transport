@@ -21,7 +21,7 @@
 
 ## 10.2 Assumptions made in this design
 
-1. One active transport card per user per semester, tied to one home route; it allows riding any slot of that route (and the shuttle).
+1. One active transport card per user per semester, tied to one home route; it allows riding any slot of that route and the shuttle. The boarding scan enforces this ("Card is for the Mirpur route"). Confirm with the transport office whether riders may sometimes take another route; if so, it is a one-line change in `apps/api/src/modules/boarding/routes.ts`.
 2. Faculty buses and student buses are separate pools by default, but any bus can be assigned to either if the authority chooses.
 3. A bus's busy window = departure time → arrival at the other end + 30 min turnaround (configurable per route).
 4. "Day pass" is valid for one date and one route, both directions.
