@@ -14,7 +14,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -29,7 +29,10 @@ const say = (msg) => console.log(`\x1b[36m›\x1b[0m ${msg}`);
 const fail = (msg) => { console.error(`\x1b[31m✖ ${msg}\x1b[0m`); stop(1); };
 
 function run(cmd, cmdArgs, opts = {}) {
-  const r = spawnSync(cmd, cmdArgs, { cwd: ROOT, stdio: opts.quiet ? 'pipe' : 'inherit', shell: WIN, env: { ...process.env, ...opts.env } });
+  // Windows needs a shell for npm/npx/py; a shell splits on spaces, so quote paths like C:\Users\Muzahid Rezwan\…
+  const shell = WIN && !isAbsolute(cmd);
+  const finalArgs = shell ? cmdArgs.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : cmdArgs;
+  const r = spawnSync(cmd, finalArgs, { cwd: ROOT, stdio: opts.quiet ? 'pipe' : 'inherit', shell, env: { ...process.env, ...opts.env } });
   if (r.status !== 0) fail(`${cmd} ${cmdArgs.join(' ')} failed${opts.quiet ? `:\n${r.stderr?.toString().slice(-2000)}` : ''}`);
   return r;
 }
