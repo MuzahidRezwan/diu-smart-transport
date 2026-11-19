@@ -24,6 +24,15 @@ from .schemas import Assignment, PlanBus, PlanRequest, PlanResponse, PlanSlot
 TIME_LIMIT_SECONDS = 20
 
 
+def _var(prob: "pulp.LpProblem", name: str, **kw) -> "pulp.LpVariable":
+    """New variable on the problem. PuLP 3 adds prob.add_variable and deprecates
+    standalone LpVariable(...), which PuLP 4 removes; PuLP 2 has only the latter."""
+    import pulp
+
+    add = getattr(prob, "add_variable", None)
+    return add(name, **kw) if add else pulp.LpVariable(name, **kw)
+
+
 def _overlap(a: PlanSlot, b: PlanSlot) -> bool:
     return a.window_start < b.window_end and b.window_start < a.window_end
 
@@ -84,9 +93,9 @@ def optimize(req: PlanRequest) -> PlanResponse:
         return not any(st < s.window_end and s.window_start < en for st, en in busy.get(b.bus_id, []))
 
     prob = pulp.LpProblem("bus_allocation", pulp.LpMinimize)
-    x = {(b.bus_id, s.time_slot_id): pulp.LpVariable(f"x_{i}_{j}", cat="Binary")
+    x = {(b.bus_id, s.time_slot_id): _var(prob, f"x_{i}_{j}", cat="Binary")
          for i, b in enumerate(req.buses) for j, s in enumerate(slots) if usable(b, s)}
-    short = {s.time_slot_id: pulp.LpVariable(f"short_{j}", lowBound=0) for j, s in enumerate(slots)}
+    short = {s.time_slot_id: _var(prob, f"short_{j}", lowBound=0) for j, s in enumerate(slots)}
     bus_by_id = {b.bus_id: b for b in req.buses}
 
     prob += (
