@@ -26,7 +26,7 @@ jobs:
       - name: Project secret guard (tree + full history)
         run: node scripts/check-secrets.mjs --all && node scripts/check-secrets.mjs --history
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
