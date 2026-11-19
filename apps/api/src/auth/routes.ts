@@ -50,6 +50,9 @@ export function authRouter(ctx: AppContext): Router {
     // Stand-in for the university login page during development.
     r.get('/sso/mock-authorize', (req, res) => {
       const state = String(req.query.state ?? '').replace(/[^A-Za-z0-9_-]/g, '');
+      // The form posts here and the callback then redirects to the web app or mobile app, so those targets must be allowed.
+      const mobileScheme = `${new URL(ctx.config.MOBILE_REDIRECT_URI).protocol}`;
+      res.setHeader('content-security-policy', `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${new URL(ctx.config.WEB_APP_URL).origin} ${mobileScheme}; frame-ancestors 'none'`);
       res.type('html').send(`<!doctype html><meta charset="utf-8"><title>Mock DIU sign-in</title>
 <body style="font-family:system-ui;max-width:420px;margin:60px auto">
 <h2>Mock DIU sign-in (development only)</h2><p>Type any university ID, e.g. 232-35-797 (student) or 710388 (faculty).</p>
