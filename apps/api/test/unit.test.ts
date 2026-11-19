@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.js';
+import { currentTrimester } from '../src/db/seed-data.js';
 import { decrypt, encrypt } from '../src/lib/crypto.js';
 import { makeQrToken, parseQrToken, verifyQrToken } from '../src/lib/qr.js';
 
@@ -68,7 +69,29 @@ describe('configuration', () => {
     expect(config.DATABASE_URL).toBeUndefined();
   });
 
+  it('mounts the API under the path of PUBLIC_API_URL', () => {
+    const c = loadConfig({ NODE_ENV: 'test', PUBLIC_API_URL: 'https://demo.example/api/' }, () => undefined);
+    expect(c.basePath).toBe('/api');
+    expect(c.apiUrl('/auth/sso/callback')).toBe('https://demo.example/api/auth/sso/callback');
+    expect(loadConfig({ NODE_ENV: 'test' }, () => undefined).apiUrl('/x')).toBe('http://localhost:4000/x');
+    expect(() => loadConfig({ NODE_ENV: 'test', WEB_DIST_DIR: '/srv/web' }, () => undefined)).toThrow(/needs PUBLIC_API_URL with a path/);
+  });
+
+  it('never allows demo mode in production', () => {
+    const prod = { NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(40), DATA_ENCRYPTION_KEY: Buffer.alloc(32).toString('base64'), DATABASE_URL: 'postgres://db/x', ML_SERVICE_TOKEN: 't', SSO_MODE: 'oidc', OIDC_ISSUER: 'https://sso.example', OIDC_CLIENT_ID: 'c', OIDC_CLIENT_SECRET: 's', DIRECTORY_MODE: 'http', DIRECTORY_BASE_URL: 'https://dir.example', PAYMENT_GATEWAY: 'sslcommerz', SSLCOMMERZ_STORE_ID: 'a', SSLCOMMERZ_STORE_PASSWORD: 'b' };
+    expect(() => loadConfig(prod, () => undefined)).not.toThrow();
+    expect(() => loadConfig({ ...prod, DEMO_MODE: 'true' }, () => undefined)).toThrow(/DEMO_MODE is not allowed in production/);
+  });
+
   it('refuses mocks and missing secrets in production', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' }, () => undefined)).toThrow(/Missing required secrets/);
+  });
+});
+
+describe('sample semester', () => {
+  it('is the DIU trimester that contains the given day', () => {
+    expect(currentTrimester('2026-11-19')).toEqual({ code: 'FALL-2026', name: 'Fall 2026', startsOn: '2026-09-01', endsOn: '2026-12-31' });
+    expect(currentTrimester('2027-02-10')).toMatchObject({ code: 'SPRING-2027', startsOn: '2027-01-01', endsOn: '2027-04-30' });
+    expect(currentTrimester('2027-08-31')).toMatchObject({ code: 'SUMMER-2027', endsOn: '2027-08-31' });
   });
 });

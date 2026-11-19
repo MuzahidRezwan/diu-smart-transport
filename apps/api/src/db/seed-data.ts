@@ -4,7 +4,7 @@
  * Coordinates and stops are approximate and for demonstration only.
  */
 import bcrypt from 'bcryptjs';
-import { ALL_PERMISSIONS, parseHHMM, type UserCategory } from '@diu/shared';
+import { ALL_PERMISSIONS, dhakaDate, parseHHMM, type UserCategory } from '@diu/shared';
 import type { DB } from './client.js';
 import { adminAccounts, buses, feeRules, operators, routeStops, routes, semesters, timeSlots, users } from './schema.js';
 
@@ -38,8 +38,15 @@ export interface SeedResult {
   mainAdmin: { userId: string; universityId: string; password: string };
 }
 
+/** DIU's trimester that contains today (Spring Jan–Apr, Summer May–Aug, Fall Sep–Dec), so sample data never starts out expired. */
+export function currentTrimester(today = dhakaDate()) {
+  const [year, month] = today.split('-').map(Number) as [number, number];
+  const [name, first, last] = month <= 4 ? ['Spring', '01-01', '04-30'] : month <= 8 ? ['Summer', '05-01', '08-31'] : ['Fall', '09-01', '12-31'];
+  return { code: `${name.toUpperCase()}-${year}`, name: `${name} ${year}`, startsOn: `${year}-${first}`, endsOn: `${year}-${last}` };
+}
+
 export async function seed(db: DB, opts: { adminPassword: string; semester?: { code: string; name: string; startsOn: string; endsOn: string } }): Promise<SeedResult> {
-  const sem = opts.semester ?? { code: 'FALL-2026', name: 'Fall 2026', startsOn: '2026-09-01', endsOn: '2026-12-31' };
+  const sem = opts.semester ?? currentTrimester();
   const [semester] = await db.insert(semesters).values({ ...sem, isCurrent: true }).returning();
 
   const ops = await db.insert(operators).values([
