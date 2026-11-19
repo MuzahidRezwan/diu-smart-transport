@@ -64,7 +64,9 @@ function scanLine(line) {
   const m = ASSIGNMENT.exec(line);
   if (m) {
     const value = m[3];
-    const looksReal = value.length >= 12 && /[A-Za-z]/.test(value) && /[0-9]/.test(value) && !PLACEHOLDER.test(value);
+    // Code such as randomBytes(48) or config.jwtSecret is not a secret value.
+    const isCode = /[()[\]{}]/.test(value) || /^(await|new|this|ctx|req|res|opts?|cfg|config|env|process|crypto)\b/.test(value);
+    const looksReal = value.length >= 12 && /[A-Za-z]/.test(value) && /[0-9]/.test(value) && !PLACEHOLDER.test(value) && !isCode;
     if (looksReal) return `possible hard-coded secret in ${m[1]}`;
   }
   return null;
