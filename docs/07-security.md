@@ -30,7 +30,7 @@ The transport office manages transport, not people's university records. This is
 
 1. **No permission exists for it.** The permission catalogue has no `users.read_profile`, `users.edit` or `users.impersonate`. Because the main admin can only hand out permissions that exist, nobody can be given profile or impersonation access from the dashboard.
 2. **Separate data.** Profile fields that the app needs for the rider themself (phone, department, batch, section, teacher initial, photo URL) live in `user_profiles`, which only the rider's own `/me` endpoints read. Authority endpoints read the `transport_riders` view: university ID, name, rider type, home route, card/pass status. The view has no other columns.
-3. **Narrow lookup.** `GET /admin/access/:universityId` needs the exact ID and `access.lookup`; there is no list or search-by-name endpoint for riders. Every lookup is audit-logged and rate-limited (30/hour per admin) to stop scraping.
+3. **Narrow lookup.** `GET /admin/access/:universityId` needs the exact ID and `access.lookup`; there is no list or search-by-name endpoint for riders. It returns the `transport_riders` row plus that rider's transport history (cards, payments, day passes, access-change audit rows), all of which are transport-owned tables. Every lookup is audit-logged and rate-limited (30/hour per admin) to stop scraping.
 4. **Database grants.** The API's authority code path uses a DB role (`transport_admin`) that has `SELECT` on `transport_riders` and **no** privilege on `user_profiles`. Even an injected query from that path cannot read profiles.
 
 Other rules:

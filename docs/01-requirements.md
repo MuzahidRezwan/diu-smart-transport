@@ -78,6 +78,7 @@ Version 0.1 · Scope: Daffodil International University (DIU) transport, main ca
 
 ### FR-10 Administration
 - FR-10.1 **Transport access lookup** by the **full** university ID only (no name/phone search, no partial IDs, no list browsing). The result shows only the transport record: ID, name, rider type, route, card/pass status. Grant free access or revoke access from there.
+- FR-10.1a The lookup also shows that rider's **transport history**: total paid, last payment, every payment attempt (date, time, transaction ID, semester, amount, method, status, failure reason), transport cards per semester (status, validity, paid or granted), One Day Pass history, and every access change made by the transport office with the admin's name and reason. The transaction IDs match the Payments & collection report.
 - FR-10.2 Audit log for every authority action (who, what, when, before/after). Granting, revoking and approving without payment require a written reason.
 - FR-10.3 Activity feed for the authority home tab (new card requests, payments, complaints, published allocations).
 - FR-10.4 Reports: ridership by route/slot/day, fee collection, prediction accuracy, complaints by category. Reports are aggregated; they never list individual riders.
