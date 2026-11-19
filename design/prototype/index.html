@@ -58,6 +58,7 @@ h2 { font-size: 18px; } h3 { font-size: 15px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .num { font-variant-numeric: tabular-nums; }
+.ico { width: 18px; height: 18px; flex: none; }
 .mono { font-family: var(--font-mono); }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
@@ -385,10 +386,10 @@ const state = {
   view: 'authority', panel: 'dashboard', day: 0, aud: 'student', dir: 'to_campus', wsTab: 'feed', drawer: null, liveFilter: 'all', liveQuery: '',
   alloc: {}, people: [], search: '',
   cardReq: [
-    { id: '232-35-812', name: 'Nusrat Jahan', dept: 'SWE · 41-B', route: 'Mirpur-10', cat: 'Student (3 sem)', pay: 'Unpaid', note: 'Asked for free access: sports quota' },
-    { id: '221-15-443', name: 'Tanvir Ahmed', dept: 'CSE · 59-D', route: 'Uttara', cat: 'Student (3 sem)', pay: 'Payment pending', note: 'bKash session started 3:58 PM' },
-    { id: '710402', name: 'Md. Habibur Rahman', dept: 'Accounts office', route: 'Tongi', cat: 'Admin staff', pay: 'Unpaid', note: 'Salary-deduction request' },
-    { id: '241-11-205', name: 'Sadia Afrin', dept: 'EEE · 64-A', route: 'Dhanmondi', cat: 'Student (2 sem)', pay: 'Unpaid', note: 'Payment failed twice' }
+    { id: '232-35-812', name: 'Nusrat Jahan', route: 'Mirpur-10', cat: 'Student (3 sem)', pay: 'Unpaid', note: 'Asked for free access: sports quota' },
+    { id: '221-15-443', name: 'Tanvir Ahmed', route: 'Uttara', cat: 'Student (3 sem)', pay: 'Payment pending', note: 'bKash session started 3:58 PM' },
+    { id: '710402', name: 'Md. Habibur Rahman', route: 'Tongi', cat: 'Admin staff', pay: 'Unpaid', note: 'Salary-deduction request' },
+    { id: '241-11-205', name: 'Sadia Afrin', route: 'Dhanmondi', cat: 'Student (2 sem)', pay: 'Unpaid', note: 'Payment failed twice' }
   ],
   cardAuto: [
     { id: '232-35-797', name: 'Khalilur Rahman', route: 'Mirpur-10', amount: '৳4,500', via: 'bKash', time: '9:41 AM' },
@@ -411,45 +412,47 @@ const state = {
   ],
   feed: [
     { time: '4:08 PM', text: 'Allocation published · DSC → Mirpur-10 · 4:30 PM · H-14, M-11', kind: 'info' },
-    { time: '3:58 PM', text: 'Card payment started · Tanvir Ahmed (221-15-443) · bKash', kind: 'none' },
-    { time: '3:41 PM', text: 'Complaint · overcrowding on 2:30 PM Uttara trip', kind: 'crit' },
-    { time: '2:16 PM', text: 'Card auto-approved after payment · Farzana Yeasmin · ৳3,800', kind: 'ok' },
+    { time: '3:58 PM', text: 'Card payment started · ID 221-15-443 · bKash', kind: 'none' },
+    { time: '3:41 PM', text: 'Complaint #C-1041 · overcrowding on 2:30 PM Uttara trip', kind: 'crit' },
+    { time: '2:16 PM', text: 'Card auto-approved after payment · ID 231-11-764 · ৳3,800', kind: 'ok' },
     { time: '1:10 PM', text: 'New routine detected · Dept. of CSE · waiting for review', kind: 'warn' },
     { time: '6:02 AM', text: 'Prediction refreshed for 19–25 Nov · model v0.3 · MAE 6.1 riders/slot', kind: 'info' }
   ],
   complaints: [
-    { who: 'Sabbir Ahmed · 221-15-332', cat: 'Overcrowding', text: '2:30 PM Uttara bus left 20 people at DSC.', status: 'open', unread: true },
-    { who: 'Lamia Akter · 232-35-118', cat: 'Late bus', text: '7:00 AM Mirpur bus came at 7:25 three days in a row.', status: 'open', unread: true },
-    { who: 'Anonymous', cat: 'Driver behaviour', text: 'Driver of M-12 was using phone while driving.', status: 'in_progress', unread: true },
-    { who: 'Rafsan Jani · 241-11-077', cat: 'Suggestion', text: 'Add a 9:15 AM slot from Dhanmondi for 10:30 classes.', status: 'open', unread: true },
-    { who: 'Tasnim Hoque · 222-35-561', cat: 'App issue', text: 'QR does not show when offline.', status: 'resolved', unread: false },
-    { who: 'Nayeem Islam · 211-15-904', cat: 'Cleanliness', text: 'S-05 seats are torn.', status: 'open', unread: true },
-    { who: 'Priya Saha · 233-11-245', cat: 'Safety', text: 'Please keep one bus till 6:30 PM for lab students.', status: 'open', unread: true },
-    { who: 'Ashik Rahman · 231-35-012', cat: 'Payment', text: 'Paid twice by mistake, need refund.', status: 'in_progress', unread: true }
+    { who: 'Ticket #C-1041 · Uttara', cat: 'Overcrowding', text: '2:30 PM Uttara bus left 20 people at DSC.', status: 'open', unread: true },
+    { who: 'Ticket #C-1040 · Mirpur-10', cat: 'Late bus', text: '7:00 AM Mirpur bus came at 7:25 three days in a row.', status: 'open', unread: true },
+    { who: 'Ticket #C-1039 · Mirpur-10', cat: 'Driver behaviour', text: 'Driver of M-12 was using phone while driving.', status: 'in_progress', unread: true },
+    { who: 'Ticket #C-1038 · Dhanmondi', cat: 'Suggestion', text: 'Add a 9:15 AM slot from Dhanmondi for 10:30 classes.', status: 'open', unread: true },
+    { who: 'Ticket #C-1037 · Savar', cat: 'App issue', text: 'QR does not show when offline.', status: 'resolved', unread: false },
+    { who: 'Ticket #C-1036 · Tongi', cat: 'Cleanliness', text: 'S-05 seats are torn.', status: 'open', unread: true },
+    { who: 'Ticket #C-1035 · Uttara', cat: 'Safety', text: 'Please keep one bus till 6:30 PM for lab students.', status: 'open', unread: true },
+    { who: 'Ticket #C-1034 · Mirpur-10', cat: 'Payment', text: 'Paid twice by mistake, need refund.', status: 'in_progress', unread: true }
   ],
   help: [
-    { who: 'Mahmuda Khatun · 241-35-310', text: 'Cannot log in with portal password.', status: 'open', unread: true },
-    { who: 'Ovi Roy · 232-15-776', text: 'Want to change route from Uttara to Tongi.', status: 'open', unread: true },
-    { who: 'Dr. Kamal Uddin · 710290', text: 'Add student schedule to my dashboard does not work.', status: 'open', unread: true }
+    { who: 'Ticket #H-211 · Mirpur-10', text: 'Cannot log in with portal password.', status: 'open', unread: true },
+    { who: 'Ticket #H-210 · Uttara', text: 'Want to change route from Uttara to Tongi.', status: 'open', unread: true },
+    { who: 'Ticket #H-209 · Uttara', text: 'Add student schedule to my dashboard does not work.', status: 'open', unread: true }
   ],
   admins: [
-    { name: 'Mr. Anisur Rahman', id: '710215', role: 'Main admin', perms: ['All permissions'] },
+    { name: 'Mr. Anisur Rahman', id: '710215', role: 'Main admin', perms: ['All transport permissions'] },
     { name: 'Rafiqul Islam', id: '710233', role: 'Allocation officer', perms: ['predictions.view', 'allocation.manage', 'allocation.publish', 'fleet.view'] },
-    { name: 'Sumaiya Akter', id: '710251', role: 'Card desk', perms: ['cards.approve', 'daypass.approve', 'users.view', 'payments.view'] },
+    { name: 'Sumaiya Akter', id: '710251', role: 'Card desk', perms: ['cards.approve', 'daypass.approve', 'access.lookup', 'payments.view'] },
     { name: 'Kamrul Hasan', id: '710277', role: 'Support desk', perms: ['support.manage', 'notices.publish'] }
   ],
+  preview: null, pending: null,
   phone: {
     student: { screen: 'home', paid: true, dir: 'from_campus', menu: false, sheet: null, passLeft: 1, passDate: null },
     faculty: { screen: 'home', paid: true, dir: 'from_campus', menu: false, sheet: null, service: 'faculty', addStudent: false }
   }
 };
-const PEOPLE = [
-  { id: '232-35-797', name: 'Khalilur Rahman', kind: 'Student', dept: 'Software Engineering · Batch 41 · Sec G', route: 'Mirpur-10', card: 'Active · Fall 2026', phone: '01712-345678' },
-  { id: '232-35-812', name: 'Nusrat Jahan', kind: 'Student', dept: 'Software Engineering · Batch 41 · Sec B', route: 'Mirpur-10', card: 'No card', phone: '01819-220114' },
-  { id: '221-15-443', name: 'Tanvir Ahmed', kind: 'Student', dept: 'CSE · Batch 59 · Sec D', route: 'Uttara', card: 'Payment pending', phone: '01911-778201' },
-  { id: '710388', name: 'Dr. Farhana Islam', kind: 'Faculty (FI)', dept: 'Software Engineering', route: 'Uttara', card: 'Active · Fall 2026', phone: '01711-908877' },
-  { id: '710402', name: 'Md. Habibur Rahman', kind: 'Admin staff', dept: 'Accounts office', route: 'Tongi', card: 'No card', phone: '01552-104433' },
-  { id: '233-15-020', name: 'Rakib Hasan', kind: 'Student', dept: 'CSE · Batch 61 · Sec A', route: 'Uttara', card: 'Day pass used (1/1)', phone: '01622-554100' }
+/* Transport-only view of riders. Phone, department, batch, section and photo are not part of it. */
+const RIDERS = [
+  { id: '232-35-797', name: 'Khalilur Rahman', kind: 'Student', route: 'Mirpur-10', card: 'Active · Fall 2026' },
+  { id: '232-35-812', name: 'Nusrat Jahan', kind: 'Student', route: 'Mirpur-10', card: 'No card' },
+  { id: '221-15-443', name: 'Tanvir Ahmed', kind: 'Student', route: 'Uttara', card: 'Payment pending' },
+  { id: '710388', name: 'Dr. Farhana Islam', kind: 'Faculty', route: 'Uttara', card: 'Active · Fall 2026' },
+  { id: '710402', name: 'Md. Habibur Rahman', kind: 'Admin staff', route: 'Tongi', card: 'No card' },
+  { id: '233-15-020', name: 'Rakib Hasan', kind: 'Student', route: 'Uttara', card: 'Day pass used (1/1)' }
 ];
 
 /* ---------- allocation logic ---------- */
@@ -535,7 +538,7 @@ function railHTML() {
       ${item('avail7', 'cal', 'Next 7 days availability')}${item('alloc7', 'cal', 'Next 7 days allocation')}
     </div>
     <div class="rail-group"><div class="rail-label">People</div>
-      ${item('search', 'search', 'Student / Faculty search')}
+      ${item('search', 'search', 'Transport access lookup')}
       ${item('complaints', 'msg', 'Complaints & suggestions', unread(state.complaints))}
       ${item('help', 'help', 'Help requests', unread(state.help))}
     </div>
@@ -678,9 +681,9 @@ function wsBody() {
     case 'cards': return `
       <h3 style="margin-bottom:8px">Needs your decision</h3>
       ${state.cardReq.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>ID</th><th>Name</th><th>Category · route</th><th>Payment</th><th>Note</th><th></th></tr></thead><tbody>
-      ${state.cardReq.map((c, i) => `<tr><td class="mono">${c.id}</td><td><b>${esc(c.name)}</b><div class="muted small">${esc(c.dept)}</div></td><td>${esc(c.cat)}<div class="muted small">${esc(c.route)}</div></td>
+      ${state.cardReq.map((c, i) => `<tr><td class="mono">${c.id}</td><td><b>${esc(c.name)}</b></td><td>${esc(c.cat)}<div class="muted small">${esc(c.route)}</div></td>
         <td><span class="pill ${c.pay === 'Payment pending' ? 'warn' : 'none'}">${c.pay}</span></td><td class="small muted">${esc(c.note)}</td>
-        <td><div class="row" style="flex-wrap:nowrap"><button class="btn btn-sm btn-primary" data-act="card-approve" data-i="${i}">Approve (free)</button><button class="btn btn-sm btn-danger" data-act="card-delete" data-i="${i}">Delete</button></div></td></tr>`).join('')}
+        <td><div class="row" style="flex-wrap:nowrap"><button class="btn btn-sm btn-primary" data-act="ask-reason" data-kind="card-approve" data-i="${i}">Approve (free)</button><button class="btn btn-sm btn-danger" data-act="card-delete" data-i="${i}">Delete</button></div></td></tr>`).join('')}
       </tbody></table></div>` : '<p class="muted">No pending requests.</p>'}
       <h3 style="margin:18px 0 8px">Auto-approved today after verified payment</h3>
       <div class="table-wrap"><table class="data"><thead><tr><th>ID</th><th>Name</th><th>Route</th><th>Paid</th><th>Time</th></tr></thead><tbody>
@@ -708,8 +711,8 @@ function wsBody() {
       </form>
       <h3 style="margin:18px 0 8px">Published</h3>
       ${state.notices.map((n) => `<div class="feed-item"><span class="muted small">${n.time}</span><div><b>${esc(n.title)}</b> <span class="pill info">${n.aud === 'all' ? 'All users' : n.aud === 'students' ? 'Students' : n.aud === 'faculty' ? 'Faculty' : `Route ${n.aud}`}</span><div class="muted small">${esc(n.body)}</div></div></div>`).join('')}`;
-    case 'preview': return `<div class="row"><p class="muted" style="margin:0">Open the user app exactly as riders see it, with today's published allocations.</p><span class="spacer"></span>
-      <button class="btn btn-primary" data-act="view" data-view="student">Open student app</button><button class="btn" data-act="view" data-view="faculty">Open faculty app</button></div>`;
+    case 'preview': return `<div class="row"><p class="muted" style="margin:0;flex:1;min-width:260px">See the rider app with a <b>sample account</b> and today's published buses. It is read-only: you cannot open a real student's or faculty member's app, and nothing can be changed from the preview.</p>
+      <button class="btn btn-primary" data-act="preview" data-view="student">Preview student app</button><button class="btn" data-act="preview" data-view="faculty">Preview faculty app</button></div>`;
   }
   return '';
 }
@@ -825,24 +828,31 @@ function panelHTML() {
       ${[0, 1, 2, 3, 4, 5, 6].map((d) => { const un = Object.entries(UNAVAILABLE[d] || {}); return `<tr><td><b>${dayLabel(d)}</b>${isHoliday(d) ? ' <span class="pill none">Weekly holiday</span>' : ''}</td><td class="num">${total}</td><td>${un.length ? un.map(([c, why]) => `${busChip(c)} <span class="muted small">${why}</span>`).join(' ') : '<span class="muted">None</span>'}</td><td class="num"><b>${total - un.length}</b></td></tr>`; }).join('')}</tbody></table></div></section>`;
     case 'alloc7': return `<section class="card"><div class="card-head"><h2>Next 7 days allocation</h2></div>${sevenDayTable(false)}</section>`;
     case 'search': {
-      const q = state.search.trim().toLowerCase();
-      const res = PEOPLE.filter((p) => !q || p.name.toLowerCase().includes(q) || p.id.includes(q) || p.phone.includes(q));
-      return `<section class="card stack"><h2>Student / Faculty search</h2>
-        <input class="input" id="people-q" placeholder="Search by ID, name or phone" value="${esc(state.search)}" style="max-width:420px">
-        <div class="table-wrap"><table class="data"><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Route</th><th>Transport access</th><th></th></tr></thead><tbody>
-        ${res.map((p) => `<tr><td class="mono">${p.id}</td><td><b>${esc(p.name)}</b><div class="muted small">${p.kind} · ${p.phone}</div></td><td class="small">${esc(p.dept)}</td><td>${p.route}</td>
-          <td><span class="pill ${p.card.startsWith('Active') ? 'ok' : p.card === 'No card' ? 'none' : 'warn'}">${p.card}</span></td>
-          <td>${p.card.startsWith('Active') ? `<button class="btn btn-sm btn-danger" data-act="revoke" data-id="${p.id}">Revoke access</button>` : `<button class="btn btn-sm btn-primary" data-act="grant" data-id="${p.id}">Give free access</button>`}</td></tr>`).join('')}
-        </tbody></table></div></section>`;
+      const q = state.search.trim();
+      const hit = RIDERS.find((p) => p.id === q);
+      return `<section class="card stack" style="max-width:820px"><h2>Transport access lookup</h2>
+        <div class="row" style="background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:10px 12px;font-weight:600">${icon(ICONS.shield)}
+          <span style="flex:1;min-width:220px">Only transport access is shown here. Student and faculty profiles (phone, department, batch, photo, results) stay in the university system. Nobody in the transport office can open or edit a rider's account.</span></div>
+        <label class="field" style="max-width:420px">Full university ID<input class="input mono" id="people-q" placeholder="e.g. 232-35-812" value="${esc(state.search)}" autocomplete="off"></label>
+        ${!q ? '<p class="muted small" style="margin:0">Type the complete ID. Partial IDs and names are not searchable, so nobody can browse the rider list.</p>'
+          : !hit ? '<p class="muted small" style="margin:0">No transport record for this ID.</p>'
+          : `<div class="table-wrap"><table class="data"><thead><tr><th>ID</th><th>Name</th><th>Rider type</th><th>Route</th><th>Transport access</th><th></th></tr></thead><tbody>
+          <tr><td class="mono">${hit.id}</td><td><b>${esc(hit.name)}</b></td><td>${hit.kind}</td><td>${hit.route}</td>
+          <td><span class="pill ${hit.card.startsWith('Active') ? 'ok' : hit.card === 'No card' || hit.card === 'Revoked' ? 'none' : 'warn'}">${hit.card}</span></td>
+          <td>${hit.card.startsWith('Active') ? `<button class="btn btn-sm btn-danger" data-act="ask-reason" data-kind="revoke" data-id="${hit.id}">Revoke access</button>` : `<button class="btn btn-sm btn-primary" data-act="ask-reason" data-kind="grant" data-id="${hit.id}">Give free access</button>`}</td></tr>
+          </tbody></table></div>
+          <p class="muted small" style="margin:0">Giving or revoking access changes only this semester's transport card. A reason is required and saved in the audit log with your name.</p>`}
+      </section>`;
     }
     case 'complaints': case 'help': {
       const list = state.panel === 'help' ? state.help : state.complaints;
       return `<section class="card"><div class="card-head"><h2>${state.panel === 'help' ? 'Help requests' : 'Complaints & suggestions'}</h2><span class="badge">${unread(list)} unread</span></div>
+        <p class="muted small" style="margin:0 0 6px">Shown by ticket and route only. Your reply goes to the rider's app inside the ticket, so their name and phone are not needed here.</p>
         ${list.map((c, i) => `<div class="feed-item" style="grid-template-columns:1fr auto"><div>${c.unread ? '<span class="pill crit" style="margin-right:6px">New</span>' : ''}<b>${esc(c.who)}</b>${c.cat ? ` · <span class="muted">${c.cat}</span>` : ''}<div>${esc(c.text)}</div></div>
           <div class="row" style="flex-wrap:nowrap"><span class="pill ${c.status === 'resolved' ? 'ok' : c.status === 'in_progress' ? 'warn' : 'none'}">${c.status.replace('_', ' ')}</span><button class="btn btn-sm" data-act="ticket" data-list="${state.panel}" data-i="${i}">${c.status === 'resolved' ? 'Reopen' : 'Mark resolved'}</button></div></div>`).join('')}</section>`;
     }
     case 'admins': {
-      const PERMS = ['predictions.view', 'allocation.manage', 'allocation.publish', 'fleet.manage', 'cards.approve', 'cards.grant_free', 'daypass.approve', 'users.manage_access', 'notices.publish', 'support.manage', 'payments.view', 'reports.view'];
+      const PERMS = ['predictions.view', 'allocation.manage', 'allocation.publish', 'fleet.manage', 'cards.approve', 'cards.grant_free', 'daypass.approve', 'access.lookup', 'access.grant_revoke', 'notices.publish', 'support.manage', 'payments.view', 'reports.view'];
       return `<section class="card stack"><h2>Admins & co-admins</h2>
         <div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Role</th><th>Permissions</th></tr></thead><tbody>
         ${state.admins.map((a) => `<tr><td><b>${esc(a.name)}</b><div class="muted small mono">${a.id}</div></td><td>${esc(a.role)}</td><td><div class="row" style="gap:4px">${a.perms.map((p) => `<span class="pill info">${p}</span>`).join('')}</div></td></tr>`).join('')}</tbody></table></div>
@@ -850,7 +860,8 @@ function panelHTML() {
           <div class="row"><label class="field" style="flex:1;min-width:180px">Name<input class="input" id="a-name" required></label><label class="field">University ID<input class="input" id="a-id" required></label>
           <label class="field">Preset<select class="input" id="a-preset"><option value="custom">Custom</option><option>Allocation officer</option><option>Card desk</option><option>Support desk</option><option>Viewer</option></select></label></div>
           <div class="row">${PERMS.map((p) => `<label class="pill none" style="cursor:pointer"><input type="checkbox" name="perm" value="${p}" id="perm-${p}"> ${p}</label>`).join('')}</div>
-          <div class="row"><button class="btn btn-primary" type="submit">Add co-admin</button><span class="muted small">They must set up 2FA on first login.</span></div></form></section>`;
+          <div class="row"><button class="btn btn-primary" type="submit">Add co-admin</button><span class="muted small">They must set up 2FA on first login.</span></div></form>
+        <p class="muted small" style="margin:0">No permission exists for reading rider profiles or acting as a rider, so even the main admin cannot grant one.</p></section>`;
     }
     case 'links': return `<section class="card stack" style="max-width:640px"><h2>Useful links</h2>${[['DIU main website', 'https://daffodilvarsity.edu.bd'], ['Academic calendar', '#'], ['Transport policy (PDF)', '#'], ['SSLCommerz merchant panel', '#'], ['Operator contacts', '#']].map(([t, u]) => `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0"><b>${t}</b><span class="muted small mono">${u}</span></div>`).join('')}</section>`;
   }
@@ -933,12 +944,44 @@ function renderDrawer() {
       ${al ? '<button class="btn btn-danger" data-act="alloc-delete">Delete allocation</button>' : ''}
     </div>`;
 }
+/* Every access change needs a written reason; it is stored in the audit log with the admin's name. */
+function askReason(kind, ref) {
+  state.pending = { kind, ref };
+  const who = kind === 'card-approve' ? state.cardReq[Number(ref)] : RIDERS.find((r) => r.id === ref);
+  const title = { grant: 'Give free transport access', revoke: 'Revoke transport access', 'card-approve': 'Approve card without payment' }[kind];
+  $('#modal').innerHTML = `<form class="stack" style="padding:18px;max-width:520px" id="reason-form">
+    <div class="row"><h2 style="flex:1">${title}</h2><button type="button" class="icon-btn" data-act="close-overlays" aria-label="Close">✕</button></div>
+    <p class="muted" style="margin:0">ID <b class="mono">${esc(who.id)}</b> · ${esc(who.name)} · ${esc(who.route)}. Only this semester's transport card changes; the rider's profile and account are untouched.</p>
+    <label class="field">Reason (saved in the audit log)<textarea class="input" id="reason-text" rows="3" placeholder="e.g. Sports quota approved by the Proctor's office, memo 41/2026"></textarea></label>
+    <p class="small" id="reason-err" style="color:var(--crit);margin:0" hidden>Write a reason first.</p>
+    <div class="row"><button type="button" class="btn btn-primary" data-act="confirm-reason">Confirm</button><button type="button" class="btn" data-act="close-overlays">Cancel</button></div></form>`;
+  $('#modal').style.width = 'min(560px, calc(100% - 32px))';
+  $('#modal').classList.add('open'); $('#scrim').classList.add('open');
+  $('#reason-text').focus();
+}
+function confirmReason() {
+  const reason = $('#reason-text').value.trim();
+  if (!reason) { $('#reason-err').hidden = false; return; }
+  const { kind, ref } = state.pending;
+  if (kind === 'card-approve') {
+    const c = state.cardReq.splice(Number(ref), 1)[0];
+    state.feed.unshift({ time: '4:12 PM', text: `Card approved without payment · ID ${c.id} · by Anisur Rahman`, kind: 'ok' });
+    toast(`ID ${c.id}: card approved · reason saved in audit log`);
+  } else {
+    const r = RIDERS.find((x) => x.id === ref);
+    r.card = kind === 'grant' ? 'Active · Fall 2026 (free)' : 'Revoked';
+    state.feed.unshift({ time: '4:12 PM', text: `Transport access ${kind === 'grant' ? 'given' : 'revoked'} · ID ${r.id} · by Anisur Rahman`, kind: kind === 'grant' ? 'ok' : 'warn' });
+    toast(`ID ${r.id}: access ${kind === 'grant' ? 'given' : 'revoked'} · reason saved in audit log`);
+  }
+  state.pending = null; closeOverlays(); render();
+}
 function closeOverlays() {
   state.drawer = null;
   $('#drawer').classList.remove('open'); $('#drawer').setAttribute('aria-hidden', 'true');
   $('#modal').classList.remove('open'); $('#scrim').classList.remove('open');
 }
 function open7() {
+  $('#modal').style.width = '';
   $('#modal').innerHTML = `<div style="padding:18px" class="stack"><div class="row"><h2>Next 7 days prediction</h2><span class="spacer"></span><button class="icon-btn" data-act="close-overlays" aria-label="Close">✕</button></div>
     <p class="muted small" style="margin:0">Predicted riders from the latest routines, academic calendar and past boarding scans. "Remaining" = slots without buses yet.</p>${sevenDayTable(true)}</div>`;
   $('#modal').classList.add('open'); $('#scrim').classList.add('open');
@@ -949,8 +992,14 @@ const USERS = {
   student: { name: 'Khalilur Rahman', initials: 'KR', id: '232-35-797', line: 'Software Engineering · Batch 41 · Sec G', route: 'R-01', aud: 'student', cat: 'Student (3 semesters/year)', fee: '৳4,500' },
   faculty: { name: 'Dr. Farhana Islam', initials: 'FI', id: '710388', line: 'Assistant Professor · SWE · Initial FI', route: 'R-02', aud: 'faculty', cat: 'Faculty', fee: '৳3,000' }
 };
+/* Sample accounts used when the authority previews the app. Real accounts are never opened from the dashboard. */
+const PREVIEW_USERS = {
+  student: { name: 'Sample Student', initials: 'SS', id: '000-00-000', line: 'Sample account · read-only preview', route: 'R-01', aud: 'student', cat: 'Student (3 semesters/year)', fee: '৳4,500' },
+  faculty: { name: 'Sample Faculty', initials: 'SF', id: '000000', line: 'Sample account · read-only preview', route: 'R-02', aud: 'faculty', cat: 'Faculty', fee: '৳3,000' }
+};
+function userOf(role) { return state.preview === role ? PREVIEW_USERS[role] : USERS[role]; }
 function userSlots(role, aud, dir) {
-  const u = USERS[role];
+  const u = userOf(role);
   return slotsFor(0).filter((s) => s.route.id === u.route && s.aud === aud && s.dir === dir).sort((a, b) => a.dep - b.dep);
 }
 function nextSlot(list) { return list.find((s) => s.dep >= DEMO_NOW - 5) || null; }
@@ -959,7 +1008,7 @@ function busesByOp(codes) {
   return ['H', 'M', 'S'].map((op) => { const c = codes.filter((x) => x[0] === op); return c.length ? `<div class="row" style="gap:6px"><span class="small" style="min-width:76px;font-weight:700">${OPS[op].name}</span>${c.map(busChip).join('')}</div>` : ''; }).join('');
 }
 function phoneHTML(role) {
-  const p = state.phone[role], u = USERS[role];
+  const p = state.phone[role], u = userOf(role);
   const unreadN = state.notices.filter((n) => n.aud === 'all' || n.aud === u.route || n.aud === (role === 'faculty' ? 'faculty' : 'students')).length;
   const nav = [['home', 'home', 'My Bus'], ['live', 'map', 'Live Route'], ['card', 'card', 'My Card'], ['notif', 'bell', 'Notification']];
   let body = '';
@@ -989,7 +1038,7 @@ function phoneHTML(role) {
 }
 function lockedHTML(msg) { return `<div class="p-card locked">${icon(ICONS.lock)}<b>${msg}</b><span class="small">Get your card to see bus numbers, live buses and your QR.</span></div>`; }
 function homeScreen(role) {
-  const p = state.phone[role], u = USERS[role];
+  const p = state.phone[role], u = userOf(role);
   const aud = role === 'faculty' ? p.service : 'student';
   const list = userSlots(role, aud, p.dir);
   const nx = nextSlot(list);
@@ -1035,7 +1084,7 @@ function homeScreen(role) {
     ${p.paid ? '' : `<div class="p-card"><b>Transport office</b><div class="small muted">01847-140000 · 01713-493000 (sample numbers)</div></div>`}`;
 }
 function scheduleScreen(role) {
-  const p = state.phone[role], u = USERS[role];
+  const p = state.phone[role], u = userOf(role);
   const aud = role === 'faculty' ? p.service : 'student';
   const block = (dir) => userSlots(role, aud, dir).map((s) => {
     const b = published(s);
@@ -1047,7 +1096,7 @@ function scheduleScreen(role) {
     <b class="small muted">TO CAMPUS</b>${block('to_campus')}<b class="small muted">TO HOME</b>${block('from_campus')}`;
 }
 function cardScreen(role) {
-  const p = state.phone[role], u = USERS[role];
+  const p = state.phone[role], u = userOf(role);
   if (!p.paid && !(role === 'student' && p.passDate)) return lockedHTML('No active transport card.');
   const pass = !p.paid;
   return `<h3>My Card</h3>
@@ -1059,7 +1108,7 @@ function cardScreen(role) {
     </div>`;
 }
 function sheetHTML(role) {
-  const p = state.phone[role], u = USERS[role];
+  const p = state.phone[role], u = userOf(role);
   const close = `<button class="btn btn-sm" data-act="ph-close" data-role="${role}">Close</button>`;
   switch (p.sheet) {
     case 'apply': return `<div class="row"><h3 style="flex:1">Apply for transport card</h3>${close}</div>
@@ -1097,7 +1146,7 @@ function notesHTML(role) {
     <div class="card stack"><h2>${role === 'faculty' ? 'Faculty / admin staff app' : 'Student app'}</h2>
       <div class="row"><span class="muted small" style="font-weight:700">Show as</span>
         <div class="seg"><button data-act="ph-paid" data-role="${role}" data-v="1" aria-pressed="${p.paid}">Card holder (paid)</button><button data-act="ph-paid" data-role="${role}" data-v="0" aria-pressed="${!p.paid}">No card (free)</button></div></div>
-      <p class="muted" style="margin:0">Signed in with the official DIU account. Profile (${role === 'faculty' ? 'department, ID, teacher initial, phone' : 'department, batch, section, phone'}) comes from the university database. Bus numbers come straight from what the authority published, so try changing an allocation in the dashboard and come back.</p></div>
+      <p class="muted" style="margin:0">${state.preview === role ? 'Sample account shown to the authority for preview. ' : ''}Riders sign in with their own official DIU account. Profile (${role === 'faculty' ? 'department, ID, teacher initial, phone' : 'department, batch, section, phone'}) comes from the university database. Bus numbers come straight from what the authority published, so try changing an allocation in the dashboard and come back.</p></div>
     <div class="card stack"><h3>What changed from the sketch</h3><ul>
       <li>"Your bus" shows a countdown and switches to <b>To home</b> automatically in the afternoon.</li>
       <li>Bus numbers are chips coloured by operator (Hanif, Monir, Surjomukhi), grouped by operator as in the sketch.</li>
@@ -1108,7 +1157,10 @@ function notesHTML(role) {
   </div>`;
 }
 function renderPhone(role) {
-  $(`#view-${role}`).innerHTML = `<div class="app-stage">${phoneHTML(role)}${notesHTML(role)}</div>`;
+  const banner = state.preview === role ? `<div class="day-banner" style="max-width:1180px;margin:16px auto 0;width:calc(100% - 32px)">${icon(ICONS.eye)}
+    <span style="flex:1;min-width:220px">Authority preview with a sample account. Read-only: nothing can be applied, paid, sent or changed here, and real riders' apps cannot be opened.</span>
+    <button class="btn btn-sm btn-primary" data-act="view" data-view="authority">Back to dashboard</button></div>` : '';
+  $(`#view-${role}`).innerHTML = `${banner}<div class="app-stage">${phoneHTML(role)}${notesHTML(role)}</div>`;
   drawQR(role);
 }
 
@@ -1155,8 +1207,13 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-act]'); if (!t) return;
   const a = t.dataset.act, role = t.dataset.role;
   const ph = role ? state.phone[role] : null;
+  const WRITE_ACTIONS = ['ph-pay', 'ph-daypass', 'ph-submit', 'ph-add-student', 'ph-sheet'];
+  if (state.preview && (role === state.preview || a === 'ph-add-student') && WRITE_ACTIONS.includes(a)) { toast('Read-only preview: nothing can be changed here'); return; }
   switch (a) {
-    case 'view': closeOverlays(); setView(t.dataset.view); break;
+    case 'view': closeOverlays(); state.preview = null; setView(t.dataset.view); break;
+    case 'preview': state.preview = t.dataset.view; state.phone[t.dataset.view].screen = 'home'; setView(t.dataset.view); break;
+    case 'ask-reason': askReason(t.dataset.kind, t.dataset.id || t.dataset.i); break;
+    case 'confirm-reason': confirmReason(); break;
     case 'panel': state.panel = t.dataset.panel; render(); break;
     case 'aud': state.aud = t.dataset.v; render(); break;
     case 'dir': state.dir = t.dataset.v; render(); break;
@@ -1189,11 +1246,9 @@ document.addEventListener('click', (e) => {
       let n = 0; slotsFor(state.day).forEach((s) => { const al = getAlloc(state.day, s.key); if (al && al.status === 'draft') { al.status = 'published'; al.by = 'Anisur Rahman'; n++; } });
       render(); toast(`Published ${n} slot${n > 1 ? 's' : ''} for ${dayLabel(state.day)} · riders notified`); break;
     }
-    case 'card-approve': { const c = state.cardReq.splice(Number(t.dataset.i), 1)[0]; state.feed.unshift({ time: '4:12 PM', text: `Free transport access granted · ${c.name} (${c.id})`, kind: 'ok' }); render(); toast(`${c.name}: card approved without payment (logged)`); break; }
     case 'card-delete': { const c = state.cardReq.splice(Number(t.dataset.i), 1)[0]; render(); toast(`Request from ${c.name} deleted`); break; }
     case 'dp-approve': { const d = state.dayReq.splice(Number(t.dataset.i), 1)[0]; state.dayAuto.unshift({ ...d }); render(); toast(`${d.name}: extra day pass approved for ${d.date}`); break; }
     case 'dp-delete': { const d = state.dayReq.splice(Number(t.dataset.i), 1)[0]; render(); toast(`Day pass request from ${d.name} rejected`); break; }
-    case 'grant': case 'revoke': { const p = PEOPLE.find((x) => x.id === t.dataset.id); p.card = a === 'grant' ? 'Active · Fall 2026 (free)' : 'Revoked'; render(); toast(`${p.name}: access ${a === 'grant' ? 'given' : 'revoked'} · saved in audit log`); break; }
     case 'ticket': { const list = t.dataset.list === 'help' ? state.help : state.complaints; const c = list[Number(t.dataset.i)]; c.unread = false; c.status = c.status === 'resolved' ? 'open' : 'resolved'; render(); break; }
     case 'logout': toast('Prototype: logout ends the session and revokes the refresh token'); break;
     case 'toast': toast(t.dataset.msg); break;
@@ -1212,6 +1267,7 @@ document.addEventListener('click', (e) => {
     case 'ph-menu': {
       const [kind, val] = t.dataset.a.split(':');
       ph.menu = false;
+      if (kind === 'sheet' && state.preview === role && val !== 'contact' && val !== 'studentsched') { toast('Read-only preview: nothing can be changed here'); renderPhone(role); break; }
       if (kind === 'screen') ph.screen = val; else if (kind === 'sheet') ph.sheet = val; else toast(val);
       renderPhone(role); break;
     }
@@ -1243,7 +1299,7 @@ document.addEventListener('submit', (e) => {
   }
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOverlays(); });
-window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (['authority', 'student', 'faculty'].includes(v) && v !== state.view) { state.view = v; render(); } });
+window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (['authority', 'student', 'faculty'].includes(v) && v !== state.view) { state.view = v; state.preview = null; render(); } });
 
 const startView = location.hash.slice(1);
 state.view = ['authority', 'student', 'faculty'].includes(startView) ? startView : 'authority';
