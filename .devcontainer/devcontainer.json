@@ -1,0 +1,13 @@
+{
+  // GitHub Codespaces: "Code → Codespaces → Create codespace on main" starts the
+  // live demo (web + API + ML + sample data) on port 7860 and opens it.
+  "name": "DIU Smart Transport live demo",
+  "build": { "dockerfile": "../deploy/demo/Dockerfile", "context": ".." },
+  "remoteUser": "node",
+  "forwardPorts": [7860],
+  "portsAttributes": {
+    "7860": { "label": "DIU Smart Transport", "onAutoForward": "openBrowser" }
+  },
+  "postStartCommand": "setsid nohup sh /app/deploy/demo/start.sh > /tmp/demo.log 2>&1 &",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" }
+}
