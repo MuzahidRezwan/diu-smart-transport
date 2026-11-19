@@ -394,7 +394,7 @@ const state = {
   cardAuto: [
     { id: '232-35-797', name: 'Khalilur Rahman', route: 'Mirpur-10', amount: '৳4,500', via: 'bKash', time: '9:41 AM' },
     { id: '222-15-118', name: 'Mehedi Hasan', route: 'Savar', amount: '৳4,500', via: 'Nagad', time: '11:02 AM' },
-    { id: '231-11-764', name: 'Farzana Yeasmin', route: 'Uttara', amount: '৳3,800', via: 'Card', time: '2:16 PM' }
+    { id: '231-11-764', name: 'Farzana Yeasmin', route: 'Uttara', amount: '৳4,500', via: 'Card', time: '2:16 PM' }
   ],
   dayReq: [
     { id: '233-15-020', name: 'Rakib Hasan', date: 'Sat 21 Nov', route: 'Uttara', nth: 2 },
@@ -414,7 +414,7 @@ const state = {
     { time: '4:08 PM', text: 'Allocation published · DSC → Mirpur-10 · 4:30 PM · H-14, M-11', kind: 'info' },
     { time: '3:58 PM', text: 'Card payment started · ID 221-15-443 · bKash', kind: 'none' },
     { time: '3:41 PM', text: 'Complaint #C-1041 · overcrowding on 2:30 PM Uttara trip', kind: 'crit' },
-    { time: '2:16 PM', text: 'Card auto-approved after payment · ID 231-11-764 · ৳3,800', kind: 'ok' },
+    { time: '2:16 PM', text: 'Card auto-approved after payment · ID 231-11-764 · ৳4,500', kind: 'ok' },
     { time: '1:10 PM', text: 'New routine detected · Dept. of CSE · waiting for review', kind: 'warn' },
     { time: '6:02 AM', text: 'Prediction refreshed for 19–25 Nov · model v0.3 · MAE 6.1 riders/slot', kind: 'info' }
   ],
@@ -439,7 +439,7 @@ const state = {
     { name: 'Sumaiya Akter', id: '710251', role: 'Card desk', perms: ['cards.approve', 'daypass.approve', 'access.lookup', 'payments.view'] },
     { name: 'Kamrul Hasan', id: '710277', role: 'Support desk', perms: ['support.manage', 'notices.publish'] }
   ],
-  preview: null, pending: null,
+  preview: null, pending: null, payDay: '0', payStatus: 'Successful', payMethod: 'all',
   phone: {
     student: { screen: 'home', paid: true, dir: 'from_campus', menu: false, sheet: null, passLeft: 1, passDate: null },
     faculty: { screen: 'home', paid: true, dir: 'from_campus', menu: false, sheet: null, service: 'faculty', addStudent: false }
@@ -541,6 +541,9 @@ function railHTML() {
       ${item('search', 'search', 'Transport access lookup')}
       ${item('complaints', 'msg', 'Complaints & suggestions', unread(state.complaints))}
       ${item('help', 'help', 'Help requests', unread(state.help))}
+    </div>
+    <div class="rail-group"><div class="rail-label">Finance</div>
+      ${item('payments', 'card', 'Payments & collection')}
     </div>
     <div class="rail-group"><div class="rail-label">Admin</div>
       ${item('admins', 'shield', 'Admins & co-admins')}${item('links', 'link', 'Useful links')}
@@ -826,6 +829,7 @@ function panelHTML() {
     case 'allocated': { const used = FLEET.filter((b) => slotsFor(0).some((s) => getAlloc(0, s.key)?.buses.includes(b.code))); return `<section class="card"><div class="card-head"><h2>Today's allocated buses</h2><span class="pill info">${used.length} buses in use</span><span class="muted small">${FLEET.filter((b) => !isUnavailable(b.code, 0)).length - used.length} available buses still free</span></div>${busesTable((b) => used.includes(b))}</section>`; }
     case 'avail7': return `<section class="card"><div class="card-head"><h2>Next 7 days availability</h2></div><div class="table-wrap"><table class="data"><thead><tr><th>Date</th><th>Total</th><th>Unavailable</th><th>Available</th></tr></thead><tbody>
       ${[0, 1, 2, 3, 4, 5, 6].map((d) => { const un = Object.entries(UNAVAILABLE[d] || {}); return `<tr><td><b>${dayLabel(d)}</b>${isHoliday(d) ? ' <span class="pill none">Weekly holiday</span>' : ''}</td><td class="num">${total}</td><td>${un.length ? un.map(([c, why]) => `${busChip(c)} <span class="muted small">${why}</span>`).join(' ') : '<span class="muted">None</span>'}</td><td class="num"><b>${total - un.length}</b></td></tr>`; }).join('')}</tbody></table></div></section>`;
+    case 'payments': return paymentsHTML();
     case 'alloc7': return `<section class="card"><div class="card-head"><h2>Next 7 days allocation</h2></div>${sevenDayTable(false)}</section>`;
     case 'search': {
       const q = state.search.trim();
@@ -852,7 +856,7 @@ function panelHTML() {
           <div class="row" style="flex-wrap:nowrap"><span class="pill ${c.status === 'resolved' ? 'ok' : c.status === 'in_progress' ? 'warn' : 'none'}">${c.status.replace('_', ' ')}</span><button class="btn btn-sm" data-act="ticket" data-list="${state.panel}" data-i="${i}">${c.status === 'resolved' ? 'Reopen' : 'Mark resolved'}</button></div></div>`).join('')}</section>`;
     }
     case 'admins': {
-      const PERMS = ['predictions.view', 'allocation.manage', 'allocation.publish', 'fleet.manage', 'cards.approve', 'cards.grant_free', 'daypass.approve', 'access.lookup', 'access.grant_revoke', 'notices.publish', 'support.manage', 'payments.view', 'reports.view'];
+      const PERMS = ['predictions.view', 'allocation.manage', 'allocation.publish', 'fleet.manage', 'cards.approve', 'cards.grant_free', 'daypass.approve', 'access.lookup', 'access.grant_revoke', 'notices.publish', 'support.manage', 'payments.view', 'payments.export', 'reports.view'];
       return `<section class="card stack"><h2>Admins & co-admins</h2>
         <div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Role</th><th>Permissions</th></tr></thead><tbody>
         ${state.admins.map((a) => `<tr><td><b>${esc(a.name)}</b><div class="muted small mono">${a.id}</div></td><td>${esc(a.role)}</td><td><div class="row" style="gap:4px">${a.perms.map((p) => `<span class="pill info">${p}</span>`).join('')}</div></td></tr>`).join('')}</tbody></table></div>
@@ -866,6 +870,151 @@ function panelHTML() {
     case 'links': return `<section class="card stack" style="max-width:640px"><h2>Useful links</h2>${[['DIU main website', 'https://daffodilvarsity.edu.bd'], ['Academic calendar', '#'], ['Transport policy (PDF)', '#'], ['SSLCommerz merchant panel', '#'], ['Operator contacts', '#']].map(([t, u]) => `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0"><b>${t}</b><span class="muted small mono">${u}</span></div>`).join('')}</section>`;
   }
   return '';
+}
+
+/* ---------- payments (sample) ---------- */
+const FEES = { 'Student (3 sem/yr)': 4500, 'Student (2 sem/yr)': 6000, 'Thesis only': 3000, 'Short course': 2000, 'Hall resident': 1500, Faculty: 3000, 'Admin staff': 2500 };
+const CAT_W = [['Student (3 sem/yr)', .55], ['Student (2 sem/yr)', .15], ['Thesis only', .06], ['Short course', .04], ['Hall resident', .08], [`Faculty`, .07], ['Admin staff', .05]];
+const METHOD_W = [['bKash', .55], ['Nagad', .25], ['Card', .12], ['Rocket', .08]];
+const FIRST = ['Arif', 'Nusrat', 'Tanvir', 'Sadia', 'Mehedi', 'Farzana', 'Rakib', 'Jannatul', 'Imran', 'Moumita', 'Sabbir', 'Lamia', 'Rafsan', 'Tasnim', 'Nayeem', 'Priya', 'Ashik', 'Mahmuda', 'Ovi', 'Fahim', 'Sumaiya', 'Rifat', 'Anika', 'Shakib', 'Tahmid', 'Raisa', 'Zarif', 'Mim'];
+const LAST = ['Hossain', 'Jahan', 'Ahmed', 'Afrin', 'Hasan', 'Yeasmin', 'Islam', 'Ferdous', 'Kabir', 'Das', 'Akter', 'Rahman', 'Hoque', 'Saha', 'Roy', 'Chowdhury', 'Sarker', 'Uddin', 'Khan', 'Mia'];
+function prng(seed) { let a = Math.floor(seed * 4294967295) >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const pickW = (r, list) => { let x = r(); for (const [v, w] of list) { if ((x -= w) <= 0) return v; } return list[0][0]; };
+const payCache = {};
+/** Payments made on BASE_DATE minus `off` days. Today's list stops at the demo time. */
+function paymentsFor(off) {
+  if (payCache[off]) return payCache[off];
+  const r = prng(hash(`pay-${off}`));
+  const d = dayDate(-off);
+  const mmdd = `${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const n = 22 + Math.floor(r() * 26);
+  const end = off === 0 ? DEMO_NOW : 23 * 60 + 30;
+  const rows = [];
+  for (let i = 0; i < n; i++) {
+    const cat = pickW(r, CAT_W);
+    const staff = cat === 'Faculty' || cat === 'Admin staff';
+    const id = staff ? `710${String(100 + Math.floor(r() * 899))}` : `${['22', '23', '24'][Math.floor(r() * 3)]}${1 + Math.floor(r() * 3)}-${['35', '15', '11', '33', '10'][Math.floor(r() * 5)]}-${String(Math.floor(r() * 999)).padStart(3, '0')}`;
+    const route = cat === 'Hall resident' ? 'Sony shuttle' : ROUTES[Math.floor(r() * 5)].name;
+    const x = r();
+    const status = x < .05 ? 'Failed' : x < .065 && off > 0 ? 'Refunded' : 'Successful';
+    rows.push({ min: 8 * 60 + Math.floor(r() * (end - 8 * 60)), id, name: `${cat === 'Faculty' && r() < .4 ? 'Dr. ' : ''}${FIRST[Math.floor(r() * FIRST.length)]} ${LAST[Math.floor(r() * LAST.length)]}`, cat, route, amount: FEES[cat], method: pickW(r, METHOD_W), status, semester: 'Fall 2026', date: d });
+  }
+  if (off === 0) {
+    rows.push({ min: 9 * 60 + 41, id: '232-35-797', name: 'Khalilur Rahman', cat: 'Student (3 sem/yr)', route: 'Mirpur-10', amount: 4500, method: 'bKash', status: 'Successful', semester: 'Fall 2026', date: d });
+    rows.push({ min: 11 * 60 + 2, id: '222-15-118', name: 'Mehedi Hasan', cat: 'Student (3 sem/yr)', route: 'Savar', amount: 4500, method: 'Nagad', status: 'Successful', semester: 'Fall 2026', date: d });
+    rows.push({ min: 14 * 60 + 16, id: '231-11-764', name: 'Farzana Yeasmin', cat: 'Student (3 sem/yr)', route: 'Uttara', amount: 4500, method: 'Card', status: 'Successful', semester: 'Fall 2026', date: d });
+    rows.push({ min: 15 * 60 + 58, id: '221-15-443', name: 'Tanvir Ahmed', cat: 'Student (3 sem/yr)', route: 'Uttara', amount: 4500, method: 'bKash', status: 'Pending', semester: 'Fall 2026', date: d });
+  }
+  rows.sort((a, b) => a.min - b.min);
+  rows.forEach((row, i) => { row.tran = `DIU-TC-${mmdd}-${String(i + 1).padStart(4, '0')}`; });
+  payCache[off] = rows;
+  return rows;
+}
+const taka = (n) => `৳${nf(n)}`;
+const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function selectedPayments() {
+  const days = state.payDay === 'week' ? [0, 1, 2, 3, 4, 5, 6] : [Number(state.payDay)];
+  const all = days.flatMap((o) => paymentsFor(o));
+  return all.filter((p) => (state.payStatus === 'all' || (state.payStatus === 'Failed' ? p.status === 'Failed' || p.status === 'Pending' : p.status === state.payStatus))
+    && (state.payMethod === 'all' || p.method === state.payMethod));
+}
+function payPeriodLabel() { return state.payDay === 'week' ? `${dayLabel(-6)} – ${dayLabel(0)}` : dayLabel(-Number(state.payDay), true); }
+function payFileBase() { return state.payDay === 'week' ? `diu-transport-payments_${isoDate(dayDate(-6))}_to_${isoDate(dayDate(0))}` : `diu-transport-payments_${isoDate(dayDate(-Number(state.payDay)))}`; }
+/** Export columns. Deliberately no phone, email or department: the transport office does not hold them. */
+function exportRows(list) {
+  return list.map((p) => ({ Date: isoDate(p.date), Time: fmt(p.min), 'Transaction ID': p.tran, 'University ID': p.id, Name: p.name, 'Rider type': p.cat, Route: p.route, Semester: p.semester, 'Amount (BDT)': p.amount, Method: p.method, Status: p.status }));
+}
+/** Quote every cell and neutralise spreadsheet formulas (=, +, -, @) so a name can never run as a formula in Excel. */
+function csvCell(v) { let s = String(v); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; }
+function toCSV(rows) { if (!rows.length) return ''; const head = Object.keys(rows[0]); return '﻿' + [head.map(csvCell).join(','), ...rows.map((r) => head.map((h) => csvCell(r[h])).join(','))].join('\r\n') + '\r\n'; }
+function paymentsHTML() {
+  const days = state.payDay === 'week' ? [0, 1, 2, 3, 4, 5, 6] : [Number(state.payDay)];
+  const base = days.flatMap((o) => paymentsFor(o));
+  const ok = base.filter((p) => p.status === 'Successful');
+  const total = ok.reduce((t, p) => t + p.amount, 0);
+  const failed = base.filter((p) => p.status === 'Failed' || p.status === 'Pending').length;
+  const refunded = base.filter((p) => p.status === 'Refunded');
+  const group = (key) => { const m = {}; ok.forEach((p) => { m[p[key]] = m[p[key]] || { n: 0, amt: 0 }; m[p[key]].n++; m[p[key]].amt += p.amount; }); return Object.entries(m).sort((a, b) => b[1].amt - a[1].amt); };
+  const list = selectedPayments();
+  const shown = list.slice(0, 120);
+  const statusCls = { Successful: 'ok', Failed: 'crit', Pending: 'warn', Refunded: 'none' };
+  const dayOpts = [0, 1, 2, 3, 4, 5, 6].map((o) => `<option value="${o}" ${state.payDay === String(o) ? 'selected' : ''}>${o === 0 ? 'Today · ' : o === 1 ? 'Yesterday · ' : ''}${dayLabel(-o)}</option>`).join('') + `<option value="week" ${state.payDay === 'week' ? 'selected' : ''}>Last 7 days</option>`;
+  const recon = state.payDay === '0' ? '<span class="pill warn">SSLCommerz settles tomorrow 10:00 AM</span>' : '<span class="pill ok">Matches SSLCommerz settlement</span>';
+  return `<section class="stack">
+    <div class="row"><h2 style="flex:1">Payments & collection</h2>
+      <label class="field">Date<select class="input" id="pay-day">${dayOpts}</select></label>
+      <label class="field">Status<select class="input" id="pay-status">${[['Successful', 'Successful'], ['Failed', 'Failed / pending'], ['Refunded', 'Refunded'], ['all', 'All']].map(([v, l]) => `<option value="${v}" ${state.payStatus === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field">Method<select class="input" id="pay-method">${['all', 'bKash', 'Nagad', 'Card', 'Rocket'].map((m) => `<option value="${m}" ${state.payMethod === m ? 'selected' : ''}>${m === 'all' ? 'All methods' : m}</option>`).join('')}</select></label></div>
+    <div class="pred-nums" style="grid-template-columns:repeat(4,minmax(0,1fr));margin:0">
+      <div class="tile"><div class="label">Riders paid</div><div class="big">${ok.length}</div><div class="sub">${esc(payPeriodLabel())}</div></div>
+      <div class="tile"><div class="label">Total collected</div><div class="big">${taka(total)}</div><div class="sub">${recon}</div></div>
+      <div class="tile"><div class="label">Failed / pending</div><div class="big">${failed}</div><div class="sub">Not counted in the total</div></div>
+      <div class="tile"><div class="label">Refunded</div><div class="big">${refunded.length}</div><div class="sub">${taka(refunded.reduce((t, p) => t + p.amount, 0))} returned</div></div>
+    </div>
+    <div class="pred-grid">
+      <div class="card"><h3 style="margin-bottom:8px">By method</h3><table class="data"><tbody>${group('method').map(([k, v]) => `<tr><td><b>${k}</b></td><td class="num">${v.n} rider${v.n === 1 ? "" : "s"}</td><td class="num" style="text-align:right"><b>${taka(v.amt)}</b></td></tr>`).join('')}</tbody></table></div>
+      <div class="card"><h3 style="margin-bottom:8px">By rider type</h3><table class="data"><tbody>${group('cat').map(([k, v]) => `<tr><td><b>${k}</b> <span class="muted small">${taka(FEES[k])} each</span></td><td class="num">${v.n}</td><td class="num" style="text-align:right"><b>${taka(v.amt)}</b></td></tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>${list.length} payment${list.length === 1 ? '' : 's'} in this list</h3><span class="spacer"></span>
+        <span data-dl-buttons>${downloadsApi ? `<button class="btn btn-primary btn-sm" data-act="pay-xlsx" ${list.length ? '' : 'disabled'}>Download Excel (.xlsx)</button> <button class="btn btn-sm" data-act="pay-csv" ${list.length ? '' : 'disabled'}>Download CSV</button>` : ''}</span>
+        <button class="btn btn-sm" data-act="pay-copy" ${list.length ? '' : 'disabled'}>Copy as CSV</button></div>
+      <p class="muted small" style="margin:0 0 10px">The file has the same rows and columns as this table: date, time, transaction ID, university ID, name, rider type, route, semester, amount, method, status. No phone, email or department. Every download is saved in the audit log with your name.</p>
+      <div class="table-wrap"><table class="data"><thead><tr>${state.payDay === 'week' ? '<th>Date</th>' : ''}<th>Time</th><th>Transaction ID</th><th>University ID</th><th>Name</th><th>Rider type · route</th><th style="text-align:right">Amount</th><th>Method</th><th>Status</th></tr></thead><tbody>
+        ${shown.map((p) => `<tr>${state.payDay === 'week' ? `<td class="small">${p.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</td>` : ''}<td class="num small">${fmt(p.min)}</td><td class="mono small">${p.tran}</td><td class="mono">${p.id}</td><td>${esc(p.name)}</td><td class="small">${p.cat}<div class="muted">${p.route}</div></td><td class="num" style="text-align:right"><b>${taka(p.amount)}</b></td><td>${p.method}</td><td><span class="pill ${statusCls[p.status]}">${p.status}</span></td></tr>`).join('') || `<tr><td colspan="9" class="muted">No payments match these filters.</td></tr>`}
+      </tbody></table></div>
+      ${list.length > shown.length ? `<p class="muted small">Showing the first ${shown.length}. The download has all ${list.length}.</p>` : ''}
+    </div></section>`;
+}
+let downloadsApi = null;
+function logExport(kind, n) {
+  state.feed.unshift({ time: '4:12 PM', text: `Payments exported (${kind}) · ${payPeriodLabel()} · ${n} rows · by Anisur Rahman`, kind: 'info' });
+}
+async function savePayments(kind) {
+  const rows = exportRows(selectedPayments());
+  if (!rows.length || !downloadsApi) return;
+  try {
+    if (kind === 'csv') {
+      await downloadsApi.save({ filename: `${payFileBase()}.csv`, data: toCSV(rows) });
+    } else {
+      const XLSX = await loadXLSX();
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [10, 9, 20, 13, 22, 20, 14, 11, 13, 9, 11].map((w) => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, ws, 'Payments');
+      const ok = rows.filter((r) => r.Status === 'Successful');
+      const summary = [['DIU Smart Transport · payment report'], ['Period', payPeriodLabel()], ['Exported by', 'Mr. Anisur Rahman (710215)'], [],
+        ['Riders paid', ok.length], ['Total collected (BDT)', ok.reduce((t, r) => t + r['Amount (BDT)'], 0)], ['Rows in file', rows.length], [], ['Method', 'Riders', 'Amount (BDT)'],
+        ...['bKash', 'Nagad', 'Card', 'Rocket'].map((m) => { const g = ok.filter((r) => r.Method === m); return [m, g.length, g.reduce((t, r) => t + r['Amount (BDT)'], 0)]; })];
+      const ws2 = XLSX.utils.aoa_to_sheet(summary); ws2['!cols'] = [{ wch: 24 }, { wch: 30 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+      const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      await downloadsApi.save({ filename: `${payFileBase()}.xlsx`, data: new Uint8Array(buf) });
+    }
+    logExport(kind === 'csv' ? 'CSV' : 'Excel', rows.length);
+    toast(`Saved ${rows.length} payments · download logged`);
+  } catch (err) {
+    const code = err && err.code;
+    if (code === 'declined') toast('Download cancelled');
+    else if (code === 'rate_limited') toast('A download prompt is already open. Try again in a moment.');
+    else if (err && err.message === 'xlsx-load') toast('Excel export could not load. Use CSV, which also opens in Excel.');
+    else { downloadsApi = null; render(); toast('Downloads are not available in this view. Use Copy as CSV.'); }
+  }
+}
+function loadXLSX() {
+  return new Promise((resolve, reject) => {
+    if (window.XLSX) return resolve(window.XLSX);
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload = () => (window.XLSX ? resolve(window.XLSX) : reject(new Error('xlsx-load')));
+    sc.onerror = () => reject(new Error('xlsx-load'));
+    document.head.appendChild(sc);
+  });
+}
+async function copyPayments() {
+  const rows = exportRows(selectedPayments());
+  try { await navigator.clipboard.writeText(toCSV(rows).replace(/^﻿/, '')); logExport('copy', rows.length); toast(`Copied ${rows.length} rows · paste into Excel or Google Sheets`); }
+  catch (e) { toast('Copy was blocked by the browser'); }
 }
 
 function sevenDayTable(withAction) {
@@ -1250,6 +1399,9 @@ document.addEventListener('click', (e) => {
     case 'dp-approve': { const d = state.dayReq.splice(Number(t.dataset.i), 1)[0]; state.dayAuto.unshift({ ...d }); render(); toast(`${d.name}: extra day pass approved for ${d.date}`); break; }
     case 'dp-delete': { const d = state.dayReq.splice(Number(t.dataset.i), 1)[0]; render(); toast(`Day pass request from ${d.name} rejected`); break; }
     case 'ticket': { const list = t.dataset.list === 'help' ? state.help : state.complaints; const c = list[Number(t.dataset.i)]; c.unread = false; c.status = c.status === 'resolved' ? 'open' : 'resolved'; render(); break; }
+    case 'pay-csv': savePayments('csv'); break;
+    case 'pay-xlsx': savePayments('xlsx'); break;
+    case 'pay-copy': copyPayments(); break;
     case 'logout': toast('Prototype: logout ends the session and revokes the refresh token'); break;
     case 'toast': toast(t.dataset.msg); break;
     /* phone */
@@ -1279,6 +1431,9 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   if (e.target.id === 'live-route') { state.liveFilter = e.target.value; render(); }
+  if (e.target.id === 'pay-day') { state.payDay = e.target.value; render(); }
+  if (e.target.id === 'pay-status') { state.payStatus = e.target.value; render(); }
+  if (e.target.id === 'pay-method') { state.payMethod = e.target.value; render(); }
   if (e.target.id === 'a-preset') {
     const presets = { 'Allocation officer': ['predictions.view', 'allocation.manage', 'allocation.publish'], 'Card desk': ['cards.approve', 'daypass.approve', 'payments.view'], 'Support desk': ['support.manage', 'notices.publish'], Viewer: ['predictions.view', 'reports.view'] };
     document.querySelectorAll('input[name="perm"]').forEach((cb) => { cb.checked = (presets[e.target.value] || []).includes(cb.value); });
@@ -1305,6 +1460,10 @@ const startView = location.hash.slice(1);
 state.view = ['authority', 'student', 'faculty'].includes(startView) ? startView : 'authority';
 render();
 drawBuses();
+(async () => {
+  try { if (window.claude && typeof window.claude.use === 'function') downloadsApi = await window.claude.use('downloads'); } catch (e) { downloadsApi = null; }
+  if (downloadsApi && state.view === 'authority' && state.panel === 'payments') render();
+})();
 </script>
 </body>
 </html>
