@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from app.fetcher import FetchError, check_url
 from app.model import ModelStore
 from app.synthetic import generate
-from app.train import backtest, synthetic_input
+from app.train import NotEnoughHistory, backtest, synthetic_input
 
 
 @pytest.fixture(scope="module")
@@ -21,6 +21,16 @@ def test_model_beats_the_baseline_and_keeps_coverage(trained):
     assert result["model"]["wape"] < result["baseline"]["wape"]
     assert result["model"]["p90_coverage"] >= 0.85
     assert result["promoted"] is True
+
+
+def test_refuses_to_train_on_too_little_history(tmp_path):
+    data = synthetic_input(seed=7)
+    first_days = sorted({h["date"] for h in data["history"]})[:30]
+    data["history"] = [h for h in data["history"] if h["date"] in first_days]
+    store = ModelStore(tmp_path)
+    with pytest.raises(NotEnoughHistory, match="Need at least 44 days"):
+        backtest(data, store=store)
+    assert store.latest() is None
 
 
 def test_promoted_model_is_served(trained):

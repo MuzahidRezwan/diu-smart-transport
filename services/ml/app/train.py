@@ -42,8 +42,21 @@ def rolling_frame(dates: list[str], expected: dict, history: list[dict], slots: 
     return pd.concat(frames, ignore_index=True)
 
 
+MIN_TRAIN_DAYS = 20
+
+
+class NotEnoughHistory(ValueError):
+    """Too few days of boarding scans to train and back-test honestly."""
+
+
 def backtest(data: dict, test_days: int = 24, store: ModelStore | None = None, promote: bool = True) -> dict:
     dates = sorted({h["date"] for h in data["history"]})
+    if len(dates) < test_days + MIN_TRAIN_DAYS:
+        raise NotEnoughHistory(
+            f"Need at least {test_days + MIN_TRAIN_DAYS} days with boarding scans "
+            f"({MIN_TRAIN_DAYS} to train, {test_days} to test); the export has {len(dates)}. "
+            "Until then the service keeps using the routine count and the attendance factor."
+        )
     split = dates[-test_days]
     frame = rolling_frame(dates, data["expected"], data["history"], data["slots"], data["calendar"])
     tr, te = frame[frame["date"] < split], frame[frame["date"] >= split]
@@ -95,7 +108,10 @@ def main() -> None:
     ap.add_argument("--no-promote", action="store_true")
     args = ap.parse_args()
     data = synthetic_input(args.seed) if args.synthetic else load_input(args.input)
-    result = backtest(data, store=ModelStore(), promote=not args.no_promote)
+    try:
+        result = backtest(data, store=ModelStore(), promote=not args.no_promote)
+    except NotEnoughHistory as err:
+        raise SystemExit(f"Not trained: {err}") from None
     print(json.dumps(result, indent=2))
 
 
