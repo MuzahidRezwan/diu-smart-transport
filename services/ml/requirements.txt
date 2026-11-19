@@ -1,4 +1,4 @@
-# Runtime dependencies (same as pyproject.toml). PuLP stays on 2.x: it bundles the CBC solver.
+# Runtime dependencies (same as pyproject.toml). PuLP stays below 4: versions 2 and 3 bundle the CBC solver.
 fastapi>=0.115
 uvicorn[standard]>=0.30
 pydantic>=2.7
