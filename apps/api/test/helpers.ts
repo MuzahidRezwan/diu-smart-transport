@@ -1,9 +1,11 @@
+import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';
 import { authenticator } from 'otplib';
 import { createApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
-import { connect } from '../src/db/client.js';
+import { connect, MIGRATIONS_DIR, type Database } from '../src/db/client.js';
 import { adminAccounts, users } from '../src/db/schema.js';
 import { seed, type SeedResult } from '../src/db/seed-data.js';
 import { MockDirectory, MockSsoProvider } from '../src/auth/providers.js';
@@ -33,9 +35,43 @@ export interface TestEnv {
   close(): Promise<void>;
 }
 
+/**
+ * TEST_PG_URL unset: in-memory PGlite (fast, no setup).
+ * TEST_PG_URL set (a superuser URL): a fresh database on real PostgreSQL with the
+ * production roles from drizzle/roles.sql. Migrations run as diu_migrator, rider
+ * code as diu_app and authority code as transport_admin, so a missing grant fails
+ * the test the same way it would fail in production.
+ */
+async function testDatabase(): Promise<Database> {
+  const superUrl = process.env.TEST_PG_URL;
+  if (!superUrl) return connect({ migrate: true });
+  const { Client } = await import('pg');
+  const name = `diu_test_${randomBytes(5).toString('hex')}`;
+  const at = (user: string, db = name) => { const u = new URL(superUrl); u.username = user; u.password = ''; u.pathname = `/${db}`; return u.toString(); };
+  const admin = new Client({ connectionString: superUrl });
+  await admin.connect();
+  await admin.query(`create database ${name}`);
+  await admin.end();
+  const inDb = new Client({ connectionString: (() => { const u = new URL(superUrl); u.pathname = `/${name}`; return u.toString(); })() });
+  await inDb.connect();
+  await inDb.query(readFileSync(`${MIGRATIONS_DIR}/roles.sql`, 'utf8'));
+  await inDb.end();
+  const database = await connect({ databaseUrl: at('diu_app'), adminDatabaseUrl: at('transport_admin'), migrationDatabaseUrl: at('diu_migrator'), migrate: true });
+  return {
+    ...database,
+    async close() {
+      await database.close();
+      const c = new Client({ connectionString: superUrl });
+      await c.connect();
+      await c.query(`drop database if exists ${name} with (force)`);
+      await c.end();
+    },
+  };
+}
+
 export async function setup(overrides: Partial<AppContext> = {}): Promise<TestEnv> {
   const config = loadConfig({ NODE_ENV: 'test', PUBLIC_API_URL: 'http://api.test', WEB_APP_URL: 'http://web.test' });
-  const database = await connect({ migrate: true });
+  const database = await testDatabase();
   const push = new ConsolePushSender();
   const ctx: AppContext = {
     config, db: database.db, adminDb: database.adminDb,

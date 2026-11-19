@@ -48,6 +48,34 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+  postgres:
+    name: API on PostgreSQL with production roles
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          # Throwaway CI database: trust lets the password-less test roles log in.
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-retries 12
+    env:
+      # Each test file gets its own database with roles.sql + grants.sql applied,
+      # so a missing grant fails here instead of in production.
+      TEST_PG_URL: postgres://postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -w @diu/shared
+      - run: npm test -w @diu/api
+
   ml:
     name: ML service
     runs-on: ubuntu-latest

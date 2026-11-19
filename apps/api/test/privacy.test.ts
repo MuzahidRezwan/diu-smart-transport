@@ -97,6 +97,8 @@ describe('authority data boundary', () => {
   it('keeps the audit log append-only', async () => {
     const err = await env.ctx.db.execute(sql`delete from audit_logs`).then(() => null, (e: Error & { cause?: Error }) => e);
     expect(err).not.toBeNull();
-    expect(String(err!.cause?.message ?? err!.message)).toMatch(/append-only/);
+    // PGlite: the trigger stops it. Real Postgres with production roles: diu_app
+    // has no DELETE grant, so it is refused before the trigger even runs.
+    expect(String(err!.cause?.message ?? err!.message)).toMatch(/append-only|permission denied for table audit_logs/);
   });
 });
