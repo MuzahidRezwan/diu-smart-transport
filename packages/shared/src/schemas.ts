@@ -92,9 +92,9 @@ export const publishDaySchema = z.object({ serviceDate: isoDate });
 export const suggestAllocationSchema = z.object({ serviceDate: isoDate, onlyEmpty: z.boolean().default(true) });
 
 /* ---------- cards, passes, fees ---------- */
+/** The gateway is the server's choice (PAYMENT_GATEWAY), never the client's. */
 export const cardApplySchema = z.object({
   routeId: uuid,
-  gateway: z.enum(['sslcommerz', 'mock']).default('sslcommerz'),
 });
 export const cardDecisionSchema = z.object({
   decision: z.enum(['approve', 'reject']),

@@ -49,7 +49,7 @@ export function CardPage() {
   const chosen = routeId || me?.homeRouteId || routes.data?.[0]?.id || '';
 
   const pay = useMutation({
-    mutationFn: () => api<{ redirectUrl: string }>('/me/card', { body: { routeId: chosen, gateway: 'sslcommerz' } }),
+    mutationFn: () => api<{ redirectUrl: string }>('/me/card', { body: { routeId: chosen } }),
     onSuccess: (r) => window.location.assign(r.redirectUrl),
   });
   const free = useMutation({

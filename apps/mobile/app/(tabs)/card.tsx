@@ -48,7 +48,7 @@ export default function CardScreen() {
   }, [q.data]);
 
   const pay = useMutation({
-    mutationFn: () => api<{ redirectUrl: string }>('/me/card', { body: { routeId: chosen, gateway: 'sslcommerz' } }),
+    mutationFn: () => api<{ redirectUrl: string }>('/me/card', { body: { routeId: chosen } }),
     onSuccess: (r) => Linking.openURL(r.redirectUrl),
     onError: (e: Error) => Alert.alert('Payment', e.message),
   });
