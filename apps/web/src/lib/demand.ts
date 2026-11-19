@@ -8,13 +8,19 @@ import type { Tone } from '../components/ui';
  */
 export function waves(rows: PredictionRow[]): { start: number; rows: PredictionRow[] }[] {
   const sorted = [...rows].sort((a, b) => a.departureMinutes - b.departureMinutes);
-  const out: { start: number; rows: PredictionRow[] }[] = [];
+  const groups: PredictionRow[][] = [];
   for (const r of sorted) {
-    const last = out[out.length - 1];
-    if (last && r.departureMinutes - last.rows[last.rows.length - 1]!.departureMinutes <= 45) last.rows.push(r);
-    else out.push({ start: r.departureMinutes, rows: [r] });
+    const last = groups[groups.length - 1];
+    if (last && r.departureMinutes - last[last.length - 1]!.departureMinutes <= 45) last.push(r);
+    else groups.push([r]);
   }
-  return out;
+  // Name each wave after its most common departure, so "7:00 AM wave" even though Dhanmondi leaves at 6:40.
+  return groups.map((g) => {
+    const counts = new Map<number, number>();
+    for (const r of g) counts.set(r.departureMinutes, (counts.get(r.departureMinutes) ?? 0) + 1);
+    const start = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]![0];
+    return { start, rows: g };
+  });
 }
 
 /** Buses needed for the busiest wave: buses repeat across waves, so this is the real constraint. */
