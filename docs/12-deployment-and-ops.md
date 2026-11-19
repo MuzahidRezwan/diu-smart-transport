@@ -207,3 +207,22 @@ Dependabot proposes weekly updates for the API/web workspace, the ML service and
 - [ ] Load test at the expected morning peak passed
 - [ ] Privacy notice in the app approved by the Registrar ([10.1](10-risks-and-assumptions.md) item 4)
 - [ ] Transport office trained on allocation, publishing and the runbooks above
+
+## 12.13 Public demo
+
+A separate, throw-away deployment for showing the system: one container ([`deploy/demo/Dockerfile`](../deploy/demo/Dockerfile)) with the web app and API on one origin (API under `/api`), the ML service with a model trained on synthetic data, and embedded PGlite. On every start it loads fresh sample data, runs the forecast and publishes suggested buses for the next four service days. `DEMO_MODE` turns off 2FA for the shared transport-office account and password changes, and the API refuses `DEMO_MODE` in production. **Never put real data in it.**
+
+**Hugging Face Space (free, permanent link).** One-time setup:
+
+1. Create a free account at huggingface.co.
+2. *Settings → Access Tokens → Create new token*, type **Write**. Copy it.
+3. On GitHub: repository *Settings → Secrets and variables → Actions → New repository secret*, name `HF_TOKEN`, paste the token. (Optional: a variable `HF_SPACE` such as `myname/diu-smart-transport`; this is the default anyway.)
+4. *Actions → Deploy demo → Run workflow*. It creates the Space and uploads the code; Hugging Face then builds it (about 10 minutes the first time).
+5. Open `https://<hf-username>-diu-smart-transport.hf.space`. Use this address, not the Space page, so sign-in survives a reload.
+
+After that, every push to `main` redeploys. A free Space sleeps after two days without visitors and wakes on the next visit (one or two minutes). To change the demo password, add a Space secret `DEMO_ADMIN_PASSWORD` in the Space settings.
+
+**GitHub Codespaces.** *Code → Codespaces → Create codespace on main* builds the same container ([`.devcontainer`](../.devcontainer/devcontainer.json)) and opens port 7860. Others can reach it only if you set the port's visibility to *Public* in the *Ports* tab. Codespaces stop after 30 idle minutes and count against your monthly free hours.
+
+**Locally.** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`.
+

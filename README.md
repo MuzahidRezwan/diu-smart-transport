@@ -4,6 +4,16 @@
 
 Bus transport for Daffodil International University: an authority dashboard, a student and faculty app, and a model that predicts how many people will ride each trip so the transport office can send the right buses at the right time, instead of sending one bus and waiting until it is full.
 
+## Live demo
+
+The whole system (dashboard, student/faculty app, ML model) with sample data, in one container:
+
+- **Hugging Face Space** (permanent public link): published by the [Deploy demo](.github/workflows/deploy-demo.yml) workflow once the `HF_TOKEN` secret is set ([setup](docs/12-deployment-and-ops.md#1213-public-demo)).
+- **GitHub Codespaces** (no extra account): [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MuzahidRezwan/diu-smart-transport?quickstart=1). The demo opens on port 7860 after the first build (about 5 minutes).
+- **Your own machine:** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`, then http://localhost:7860.
+
+Sign in as the transport office with *Fill in* on the login page (`710215` / `diu-demo-2026`, no 2FA in the demo), or as a rider with `232-35-797` (student) or `710410` (faculty) on the stand-in university page. Sign-in and payments are simulated, and the data resets when the demo restarts.
+
 ## What it does
 
 **Transport office (web dashboard)**
