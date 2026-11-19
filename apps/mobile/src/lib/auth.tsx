@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import type { MeResponse } from '@diu/shared';
+import { ssoFailureMessage, type MeResponse } from '@diu/shared';
 import { api, clearSession, refresh, saveSession } from './api';
 import { registerForPush } from './push';
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await WebBrowser.openAuthSessionAsync(authorizationUrl, Linking.createURL('auth'));
       if (result.type !== 'success') return;
       const { queryParams } = Linking.parse(result.url);
-      if (queryParams?.error) throw new Error(String(queryParams.error).replaceAll('_', ' '));
+      if (queryParams?.error) throw new Error(ssoFailureMessage(String(queryParams.error)));
       const code = String(queryParams?.code ?? '');
       if (!code) throw new Error('Sign-in did not complete');
       await saveSession(await api<{ accessToken: string; refreshToken: string }>('/auth/sso/complete', { body: { code } }));
