@@ -105,3 +105,8 @@ jobs:
         working-directory: apps/mobile
       - run: npx tsc --noEmit
         working-directory: apps/mobile
+      - name: Bundle for Android (Metro + Hermes)
+        run: npm run bundle:android
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://api.ci.invalid
