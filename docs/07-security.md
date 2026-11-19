@@ -19,10 +19,25 @@
 ## 7.2 Authorization (RBAC)
 
 - Roles: `student`, `faculty`, `staff`, `authority`.
-- Authority accounts carry **fine-grained permissions** (see `packages/shared/src/permissions.ts`), e.g. `allocation.publish`, `cards.approve`, `cards.grant_free`, `users.manage_access`, `notices.publish`, `admins.manage`, `fees.manage`, `fleet.manage`, `reports.view`.
+- Authority accounts carry **fine-grained permissions** (see `packages/shared/src/permissions.ts`), e.g. `allocation.publish`, `cards.approve`, `cards.grant_free`, `access.lookup`, `access.grant_revoke`, `notices.publish`, `admins.manage`, `fees.manage`, `fleet.manage`, `reports.view`.
 - The Main Admin implicitly has all permissions and is the only one with `admins.manage` by default. Presets: *Allocation officer*, *Card desk*, *Support desk*, *Viewer*.
 - Every route declares its permission with `requirePermission(...)`; deny by default.
 - Object-level checks: a user can only read their own card, passes, payments and complaints (`WHERE user_id = :me`), never by passing another ID.
+
+### Authority data boundary (no profile access, no impersonation)
+
+The transport office manages transport, not people's university records. This is enforced in four layers, so one bug cannot break it:
+
+1. **No permission exists for it.** The permission catalogue has no `users.read_profile`, `users.edit` or `users.impersonate`. Because the main admin can only hand out permissions that exist, nobody can be given profile or impersonation access from the dashboard.
+2. **Separate data.** Profile fields that the app needs for the rider themself (phone, department, batch, section, teacher initial, photo URL) live in `user_profiles`, which only the rider's own `/me` endpoints read. Authority endpoints read the `transport_riders` view: university ID, name, rider type, home route, card/pass status. The view has no other columns.
+3. **Narrow lookup.** `GET /admin/access/:universityId` needs the exact ID and `access.lookup`; there is no list or search-by-name endpoint for riders. Every lookup is audit-logged and rate-limited (30/hour per admin) to stop scraping.
+4. **Database grants.** The API's authority code path uses a DB role (`transport_admin`) that has `SELECT` on `transport_riders` and **no** privilege on `user_profiles`. Even an injected query from that path cannot read profiles.
+
+Other rules:
+- **No "log in as user".** Tokens are issued only by the rider's own SSO sign-in; there is no endpoint that mints a token for someone else. "Preview the app" in the dashboard renders the app with a fixed sample account and blocks every write.
+- Authority actions can change only transport-owned rows (allocations, slots, fleet, fees, notices, `transport_cards.status`, `day_passes.status`, ticket replies). Granting, revoking and approving without payment require a reason, stored in the audit log.
+- Complaints/help tickets are shown to the authority by ticket number and route. The rider's identity is attached to the ticket only in the rider's own view; replies are delivered inside the ticket.
+- Reports and the ML pipeline use aggregated or pseudonymous data (hashed IDs), never profile fields.
 
 ## 7.3 Input & API hardening
 
