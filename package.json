@@ -22,5 +22,8 @@
     "db:generate": "npm run db:generate -w @diu/api",
     "db:migrate": "npm run db:migrate -w @diu/api",
     "db:seed": "npm run db:seed -w @diu/api"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

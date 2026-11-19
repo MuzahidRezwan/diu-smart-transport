@@ -10,7 +10,7 @@ const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' |
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().default(4000),
-  TRUST_PROXY: bool.default('false'),
+  TRUST_PROXY: bool.default(false),
   PUBLIC_API_URL: z.string().url().default('http://localhost:4000'),
   WEB_APP_URL: z.string().url().default('http://localhost:5173'),
   MOBILE_REDIRECT_URI: z.string().default('diutransport://auth'),
@@ -40,7 +40,7 @@ const EnvSchema = z.object({
   PAYMENT_GATEWAY: z.enum(['mock', 'sslcommerz']).default('mock'),
   SSLCOMMERZ_STORE_ID: z.string().optional(),
   SSLCOMMERZ_STORE_PASSWORD: z.string().optional(),
-  SSLCOMMERZ_SANDBOX: bool.default('true'),
+  SSLCOMMERZ_SANDBOX: bool.default(true),
 
   ML_SERVICE_URL: z.string().url().default('http://localhost:8000'),
   ML_SERVICE_TOKEN: z.string().optional(),
