@@ -48,7 +48,7 @@ const SECRET_PATTERNS = [
  * Placeholders (change-me, <...>, ${...}, xxx, example, dev-only...) are ignored.
  */
 const ASSIGNMENT = /\b([A-Z0-9_]*(SECRET|PASSWORD|PASSWD|API_KEY|APIKEY|ACCESS_KEY|PRIVATE_KEY|TOKEN|STORE_PASS|CLIENT_SECRET)[A-Z0-9_]*)\s*[:=]\s*["']?([^\s"'#,;]+)/i;
-const PLACEHOLDER = /^(change[-_]?me|changeme|replace[-_]?me|your[-_].*|<.*>|\$\{.*\}|\$[A-Z_]+|x{3,}|\*{3,}|example.*|dummy.*|placeholder.*|test.*|dev[-_]only.*|local[-_]only.*|sandbox.*|null|undefined|none|true|false|process\.env.*|env\(.*|os\.environ.*|settings\..*|config\..*|z\..*|string|required|optional|\[.*\]|\(.*\)|[0-9]{1,6})$/i;
+const PLACEHOLDER = /^(change[-_]?me.*|changeme.*|replace[-_]?me.*|generate[-_].*|your[-_].*|<.*>|\$\{.*\}|\$[A-Z_]+|x{3,}|\*{3,}|example.*|dummy.*|placeholder.*|test.*|dev[-_]only.*|local[-_]only.*|sandbox.*|null|undefined|none|true|false|process\.env.*|env\(.*|os\.environ.*|settings\..*|config\..*|z\..*|string|required|optional|\[.*\]|\(.*\)|[0-9]{1,6})$/i;
 
 const SKIP_CONTENT = [/^package-lock\.json$/, /(^|\/)node_modules\//, /\.(png|jpg|jpeg|gif|webp|ico|pdf|woff2?|ttf|zip|gz|xlsx)$/i, /^scripts\/check-secrets\.mjs$/];
 const ALLOW_MARK = 'secret-scan: allow';
