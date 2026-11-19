@@ -2,13 +2,16 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { MeResponse, Permission } from '@diu/shared';
 import { api, refreshSession, setAccessToken } from './api';
 
+export interface AuthorityChallenge { challengeId: string; mustEnrollTotp: boolean; enrollment?: { otpauthUrl: string; secret: string }; mustChangePassword: boolean }
+
 interface AuthState {
   me: MeResponse | null;
   loading: boolean;
   reload(): Promise<void>;
   startUniversitySignIn(): Promise<void>;
   completeUniversitySignIn(code: string): Promise<void>;
-  authorityPassword(universityId: string, password: string): Promise<{ challengeId: string; mustEnrollTotp: boolean; enrollment?: { otpauthUrl: string; secret: string }; mustChangePassword: boolean }>;
+  /** Returns the 2FA challenge, or null when the server signed in straight away (public demo). */
+  authorityPassword(universityId: string, password: string): Promise<AuthorityChallenge | null>;
   authorityTotp(challengeId: string, code: string): Promise<void>;
   logout(all?: boolean): Promise<void>;
   can(p: Permission): boolean;
@@ -44,7 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(t.accessToken);
       await reload();
     },
-    authorityPassword: (universityId, password) => api('/auth/authority/login', { body: { universityId, password } }),
+    async authorityPassword(universityId, password) {
+      const r = await api<AuthorityChallenge | { accessToken: string }>('/auth/authority/login', { body: { universityId, password } });
+      if ('accessToken' in r) { setAccessToken(r.accessToken); await reload(); return null; }
+      return r;
+    },
     async authorityTotp(challengeId, code) {
       const t = await api<{ accessToken: string }>('/auth/authority/totp', { body: { challengeId, code } });
       setAccessToken(t.accessToken);

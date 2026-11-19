@@ -2,7 +2,7 @@
  * API client. The access token lives in memory only; the refresh token is an
  * HttpOnly cookie the browser sends to /auth/refresh. A 401 triggers one refresh.
  */
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000';
+export const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000').replace(/\/+$/, '');
 
 let accessToken: string | null = null;
 let refreshing: Promise<boolean> | null = null;
@@ -38,7 +38,8 @@ export async function refreshSession(): Promise<boolean> {
 type Query = Record<string, string | number | boolean | undefined | null>;
 
 function url(path: string, query?: Query) {
-  const u = new URL(path, API_URL);
+  // API_URL may be absolute (https://api.example) or a path on this origin (/api).
+  const u = new URL(`${API_URL.replace(/\/+$/, '')}${path}`, window.location.origin);
   for (const [k, v] of Object.entries(query ?? {})) if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, String(v));
   return u.toString();
 }
