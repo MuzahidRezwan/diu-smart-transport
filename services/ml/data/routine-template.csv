@@ -1,0 +1,4 @@
+department,batch,section,teacher_initial,day,start_time,end_time,course_code,room
+SWE,41,G,MRH,Saturday,08:30,10:00,SE331,AB4-602
+SWE,41,G,NRS,Saturday,10:00,11:30,SE333,AB4-602
+SWE,43,A,TBR,Sunday,11:30,13:00,SE215,AB4-603
