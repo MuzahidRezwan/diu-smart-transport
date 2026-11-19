@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.js';
 import { decrypt, encrypt } from '../src/lib/crypto.js';
@@ -50,5 +51,24 @@ describe('configuration', () => {
 
   it('rejects an encryption key of the wrong size', () => {
     expect(() => loadConfig({ NODE_ENV: 'test', DATA_ENCRYPTION_KEY: Buffer.alloc(16).toString('base64') })).toThrow(/32 bytes/);
+  });
+});
+
+describe('configuration', () => {
+  it('starts from a copied .env.example, where unused keys are left empty', () => {
+    const fromExample = readFileSync(new URL('../.env.example', import.meta.url), 'utf8')
+      .split('\n').filter((l) => /^[A-Z_]+=/.test(l))
+      .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)] as const);
+    const env = Object.fromEntries(fromExample);
+    env.JWT_SECRET = 'x'.repeat(48);
+    env.DATA_ENCRYPTION_KEY = Buffer.alloc(32, 1).toString('base64');
+    const config = loadConfig(env, () => undefined);
+    expect(config.SSO_MODE).toBe('mock');
+    expect(config.OIDC_ISSUER).toBeUndefined();
+    expect(config.DATABASE_URL).toBeUndefined();
+  });
+
+  it('refuses mocks and missing secrets in production', () => {
+    expect(() => loadConfig({ NODE_ENV: 'production' }, () => undefined)).toThrow(/Missing required secrets/);
   });
 });

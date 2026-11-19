@@ -65,7 +65,9 @@ export interface Config extends Omit<Env, 'JWT_SECRET' | 'DATA_ENCRYPTION_KEY'> 
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, log: (m: string) => void = console.warn): Config {
-  const parsed = EnvSchema.safeParse(env);
+  // "KEY=" in an env file means "not set", not an empty value to validate.
+  const given = Object.fromEntries(Object.entries(env).filter(([, v]) => v !== undefined && v.trim() !== ''));
+  const parsed = EnvSchema.safeParse(given);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`Invalid configuration: ${issues}`);
