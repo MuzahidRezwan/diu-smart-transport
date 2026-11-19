@@ -17,13 +17,41 @@ coverage/
 .mypy_cache/
 .ruff_cache/
 
-# env / secrets
+# ---------------------------------------------------------------
+# Secrets: never commit these. Real values live in the server's
+# environment / secret store. Only *.example files are allowed.
+# ---------------------------------------------------------------
 .env
 .env.*
 !.env.example
+!**/.env.example
 *.pem
+*.key
+*.crt
 *.p12
+*.pfx
+*.jks
+*.keystore
+*.der
+id_rsa*
+id_ed25519*
+*.ppk
+secrets/
+.secrets/
+credentials*.json
 service-account*.json
+*firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
+*.mobileprovision
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+.npmrc
+.pypirc
+.netrc
 
 # ML artifacts (models are versioned in the model registry, not git)
 services/ml/artifacts/*
