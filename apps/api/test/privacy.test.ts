@@ -20,7 +20,7 @@ beforeAll(async () => {
   await request(env.app).post('/me/tickets').set(bearer(rider)).send({ kind: 'complaint', category: 'overcrowding', body: 'The 2:30 PM bus left people behind at DSC.', routeId: env.seeded.routeIds['R-01'] }).expect(201);
   await request(env.app).post('/me/tickets').set(bearer(rider)).send({ kind: 'help', subject: 'Login problem', body: 'Cannot see my card after paying.' }).expect(201);
 });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 const today = () => new Date(Date.now() + 6 * 3600_000).toISOString().slice(0, 10);
 

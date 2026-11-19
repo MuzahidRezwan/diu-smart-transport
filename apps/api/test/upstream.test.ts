@@ -8,7 +8,7 @@ const DOWN = 'http://127.0.0.1:1';
 
 let env: TestEnv;
 beforeAll(async () => { env = await setup({ directory: new HttpDirectory(DOWN, 'test-token') }); });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 describe('when a university system is down', () => {
   it('sends the rider back to the app with a reason instead of an error page', async () => {

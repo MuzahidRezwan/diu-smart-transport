@@ -46,7 +46,7 @@ beforeAll(async () => {
   await tripNow('R-02', 'H-12');
   await tripNow('SH-1', 'M-03');
 });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 describe('boarding scan and the rider route', () => {
   it('accepts a card on its own route', async () => {

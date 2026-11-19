@@ -21,7 +21,11 @@ DECLARE r text;
 BEGIN
   FOREACH r IN ARRAY ARRAY['diu_migrator', 'diu_app', 'transport_admin', 'diu_reporting'] LOOP
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
-      EXECUTE format('CREATE ROLE %I LOGIN', r);
+      BEGIN
+        EXECUTE format('CREATE ROLE %I LOGIN', r);
+      EXCEPTION WHEN duplicate_object OR unique_violation THEN
+        NULL;  -- created at the same moment by another session
+      END;
     END IF;
   END LOOP;
   -- The migrator creates the "drizzle" bookkeeping schema and every table, so it owns them.

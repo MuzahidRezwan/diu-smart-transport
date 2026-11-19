@@ -4,7 +4,7 @@ import { bearer, riderLogin, setup, type TestEnv } from './helpers.js';
 
 let env: TestEnv;
 beforeAll(async () => { env = await setup(); });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 describe('complaints and help requests', () => {
   it('gives every ticket its own number when many arrive at once', async () => {

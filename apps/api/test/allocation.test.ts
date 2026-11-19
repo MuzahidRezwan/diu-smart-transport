@@ -9,7 +9,7 @@ beforeAll(async () => {
   env = await setup();
   admin = await adminLogin(env);
 });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 const slot = (k: string) => env.seeded.slotIds[k]!;
 const bus = (code: string) => env.seeded.busIds[code]!;

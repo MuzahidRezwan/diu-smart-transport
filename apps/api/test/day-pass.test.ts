@@ -5,7 +5,7 @@ import { adminLogin, bearer, nextServiceDate, riderLogin, setup, type TestEnv } 
 let env: TestEnv;
 let admin: string;
 beforeAll(async () => { env = await setup(); admin = await adminLogin(env); });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 describe('one day pass', () => {
   it('auto-approves the first pass of the semester', async () => {

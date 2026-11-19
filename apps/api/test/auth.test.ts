@@ -4,7 +4,7 @@ import { ADMIN_PASSWORD, adminLogin, bearer, riderLogin, setup, type TestEnv } f
 
 let env: TestEnv;
 beforeAll(async () => { env = await setup(); });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 describe('rider sign-in through university SSO', () => {
   it('signs a student in and returns their own profile on /me', async () => {

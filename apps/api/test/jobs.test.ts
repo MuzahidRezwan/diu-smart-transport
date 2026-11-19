@@ -7,7 +7,7 @@ import { setup, type TestEnv } from './helpers.js';
 
 let env: TestEnv;
 beforeAll(async () => { env = await setup(); });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 describe('nightly expiry job', () => {
   it('deletes refresh tokens a week after they expire and keeps newer ones', async () => {

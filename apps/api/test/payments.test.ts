@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 let env: TestEnv;
 let admin: string;
 beforeAll(async () => { env = await setup(); admin = await adminLogin(env); });
-afterAll(async () => { await env.close(); });
+afterAll(async () => { await env?.close(); });
 
 const today = () => new Date(Date.now() + 6 * 3600_000).toISOString().slice(0, 10);
 
