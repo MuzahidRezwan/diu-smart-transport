@@ -75,11 +75,18 @@ Version 0.1 · Scope: Daffodil International University (DIU) transport, main ca
 - FR-9.2 Complaints and help requests have a status workflow (open → in progress → resolved → closed) with authority replies and unread badges.
 
 ### FR-10 Administration
-- FR-10.1 Search users by ID/name/phone; see card and pass history; grant/revoke access.
-- FR-10.2 Audit log for every authority action (who, what, when, before/after).
+- FR-10.1 **Transport access lookup** by the **full** university ID only (no name/phone search, no partial IDs, no list browsing). The result shows only the transport record: ID, name, rider type, route, card/pass status. Grant free access or revoke access from there.
+- FR-10.2 Audit log for every authority action (who, what, when, before/after). Granting, revoking and approving without payment require a written reason.
 - FR-10.3 Activity feed for the authority home tab (new card requests, payments, complaints, published allocations).
-- FR-10.4 Reports: ridership by route/slot/day, fee collection, prediction accuracy, complaints by category.
-- FR-10.5 "Preview as user" to see what students/faculty see.
+- FR-10.4 Reports: ridership by route/slot/day, fee collection, prediction accuracy, complaints by category. Reports are aggregated; they never list individual riders.
+- FR-10.5 "Preview the app" opens the student/faculty app with a **sample account in read-only mode**. It never opens a real rider's account.
+
+### FR-11 Authority data boundary (privacy)
+- FR-11.1 Authority users (main admin and co-admins) **cannot view student or faculty profiles**: no phone, email, department, batch, section, photo, results or other university data.
+- FR-11.2 Authority users **cannot sign in as, impersonate, or act inside** a rider's account, and cannot edit any rider profile field. There is no permission for this, so the main admin cannot grant it either.
+- FR-11.3 Authority users change only transport-owned records: allocations, schedules, fleet, fee rules, notices, card and day-pass status, ticket replies.
+- FR-11.4 Complaints and help requests are shown by ticket number and route. Replies reach the rider inside the ticket in their app, so the authority never needs their contact details.
+- FR-11.5 What riders see is exactly what the authority **published**: drafts are never sent to the app, and a deleted allocation disappears from the app.
 
 ## 1.3 Non-functional requirements
 
