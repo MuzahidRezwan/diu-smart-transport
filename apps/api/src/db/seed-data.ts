@@ -1,6 +1,6 @@
 /**
  * Sample data for local development and tests: one semester, three operators,
- * 41 buses, five routes plus the Sony shuttle, time slots and fee rules.
+ * 36 buses, five routes plus the Sony shuttle, time slots and fee rules.
  * Coordinates and stops are approximate and for demonstration only.
  */
 import bcrypt from 'bcryptjs';
