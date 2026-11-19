@@ -8,7 +8,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eas-build-post-install": "cd ../.. && npm ci --ignore-scripts --no-audit --no-fund && npm run build -w @diu/shared",
+    "bundle:android": "expo export --clear --platform android --output-dir dist"
   },
   "dependencies": {
     "@diu/shared": "file:../../packages/shared",

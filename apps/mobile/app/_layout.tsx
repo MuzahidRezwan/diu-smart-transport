@@ -2,7 +2,9 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CONFIG_ERROR } from '../src/lib/api';
 import { AuthProvider, useAuth } from '../src/lib/auth';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1 } } });
@@ -31,6 +33,13 @@ function Gate() {
 }
 
 export default function RootLayout() {
+  if (CONFIG_ERROR) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <Text style={{ fontSize: 16, textAlign: 'center' }}>{CONFIG_ERROR}</Text>
+      </View>
+    );
+  }
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>

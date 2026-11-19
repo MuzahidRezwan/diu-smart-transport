@@ -5,6 +5,15 @@
 import * as SecureStore from 'expo-secure-store';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+/**
+ * A release build must reach the real API over HTTPS. If this is set, the
+ * build was made without EXPO_PUBLIC_API_URL, or from a stale Metro cache
+ * (always bundle releases with --clear; EAS builds start clean).
+ */
+export const CONFIG_ERROR = !__DEV__ && !API_URL.startsWith('https://')
+  ? `This build of the app points at ${API_URL}, not the university server. Ask the transport office for the current app.`
+  : null;
 const REFRESH_KEY = 'diu.refresh';
 
 let accessToken: string | null = null;
