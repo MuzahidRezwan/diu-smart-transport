@@ -455,6 +455,41 @@ const RIDERS = [
   { id: '233-15-020', name: 'Rakib Hasan', kind: 'Student', route: 'Uttara', card: 'Day pass used (1/1)' }
 ];
 
+/* Transport history per rider: cards, payments, day passes and access changes. Still no profile fields. */
+function P(date, time, tran, semester, amount, method, status, note) {
+  const d = new Date(`${date}T${time}:00`);
+  return { when: `${d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })} · ${fmt(toMin(time))}`, sort: `${date}-${time}`, tran, semester, amount, method, status, note: note || '' };
+}
+const RIDER_HISTORY = {
+  '232-35-797': {
+    payments: [P('2026-05-12', '20:14', 'DIU-TC-0512-0144', 'Summer 2026', 4500, 'Nagad', 'Successful'), P('2026-05-12', '20:06', 'DIU-TC-0512-0141', 'Summer 2026', 4500, 'bKash', 'Failed', 'Insufficient balance'), P('2026-01-14', '10:32', 'DIU-TC-0114-0087', 'Spring 2026', 4500, 'bKash', 'Successful')],
+    cards: [{ sem: 'Fall 2026', status: 'Active', valid: '19 Nov – 31 Dec 2026', how: 'Payment · auto-approved' }, { sem: 'Summer 2026', status: 'Expired', valid: '12 May – 31 Aug 2026', how: 'Payment · auto-approved' }, { sem: 'Spring 2026', status: 'Expired', valid: '14 Jan – 30 Apr 2026', how: 'Payment · auto-approved' }],
+    passes: [{ date: 'Mon 05 Oct 2026', route: 'Mirpur-10', status: 'Used', how: 'Auto-approved (1st of Fall 2026)' }], audit: []
+  },
+  '232-35-812': {
+    payments: [P('2026-05-20', '09:10', 'DIU-TC-0520-0032', 'Summer 2026', 4500, 'bKash', 'Successful')],
+    cards: [{ sem: 'Fall 2026', status: 'Requested', valid: '—', how: 'Free access requested: sports quota' }, { sem: 'Summer 2026', status: 'Expired', valid: '20 May – 31 Aug 2026', how: 'Payment · auto-approved' }],
+    passes: [], audit: []
+  },
+  '221-15-443': {
+    payments: [P('2026-11-18', '21:40', 'DIU-TC-1118-0091', 'Fall 2026', 4500, 'bKash', 'Failed', 'Session timed out'), P('2026-05-09', '13:02', 'DIU-TC-0509-0120', 'Summer 2026', 4500, 'Card', 'Successful')],
+    cards: [{ sem: 'Fall 2026', status: 'Pending payment', valid: '—', how: 'bKash session open' }, { sem: 'Summer 2026', status: 'Expired', valid: '09 May – 31 Aug 2026', how: 'Payment · auto-approved' }],
+    passes: [], audit: []
+  },
+  '710388': {
+    payments: [P('2026-09-02', '11:25', 'DIU-TC-0902-0210', 'Fall 2026', 3000, 'Card', 'Successful'), P('2026-05-04', '16:48', 'DIU-TC-0504-0077', 'Summer 2026', 3000, 'bKash', 'Successful')],
+    cards: [{ sem: 'Fall 2026', status: 'Active', valid: '02 Sep – 31 Dec 2026', how: 'Payment · auto-approved' }, { sem: 'Summer 2026', status: 'Expired', valid: '04 May – 31 Aug 2026', how: 'Payment · auto-approved' }],
+    passes: [], audit: []
+  },
+  '710402': { payments: [], cards: [{ sem: 'Fall 2026', status: 'Requested', valid: '—', how: 'Salary-deduction request' }], passes: [], audit: [] },
+  '233-15-020': {
+    payments: [], cards: [],
+    passes: [{ date: 'Thu 12 Nov 2026', route: 'Uttara', status: 'Used', how: 'Auto-approved (1st of Fall 2026)' }, { date: 'Sat 21 Nov 2026', route: 'Uttara', status: 'Waiting for decision', how: 'Over the limit (2nd request)' }],
+    audit: []
+  }
+};
+const historyOf = (id) => (RIDER_HISTORY[id] = RIDER_HISTORY[id] || { payments: [], cards: [], passes: [], audit: [] });
+
 /* ---------- allocation logic ---------- */
 function allocKey(day, key) { return `${day}|${key}`; }
 function getAlloc(day, key) { return state.alloc[allocKey(day, key)]; }
@@ -834,10 +869,11 @@ function panelHTML() {
     case 'search': {
       const q = state.search.trim();
       const hit = RIDERS.find((p) => p.id === q);
-      return `<section class="card stack" style="max-width:820px"><h2>Transport access lookup</h2>
+      return `<section class="card stack" style="max-width:980px"><h2>Transport access lookup</h2>
         <div class="row" style="background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:10px 12px;font-weight:600">${icon(ICONS.shield)}
           <span style="flex:1;min-width:220px">Only transport access is shown here. Student and faculty profiles (phone, department, batch, photo, results) stay in the university system. Nobody in the transport office can open or edit a rider's account.</span></div>
         <label class="field" style="max-width:420px">Full university ID<input class="input mono" id="people-q" placeholder="e.g. 232-35-812" value="${esc(state.search)}" autocomplete="off"></label>
+        <div class="row small"><span class="muted">Sample IDs in this prototype:</span>${RIDERS.map((r) => `<button class="btn btn-sm mono" data-act="fill-id" data-id="${r.id}">${r.id}</button>`).join('')}</div>
         ${!q ? '<p class="muted small" style="margin:0">Type the complete ID. Partial IDs and names are not searchable, so nobody can browse the rider list.</p>'
           : !hit ? '<p class="muted small" style="margin:0">No transport record for this ID.</p>'
           : `<div class="table-wrap"><table class="data"><thead><tr><th>ID</th><th>Name</th><th>Rider type</th><th>Route</th><th>Transport access</th><th></th></tr></thead><tbody>
@@ -845,7 +881,8 @@ function panelHTML() {
           <td><span class="pill ${hit.card.startsWith('Active') ? 'ok' : hit.card === 'No card' || hit.card === 'Revoked' ? 'none' : 'warn'}">${hit.card}</span></td>
           <td>${hit.card.startsWith('Active') ? `<button class="btn btn-sm btn-danger" data-act="ask-reason" data-kind="revoke" data-id="${hit.id}">Revoke access</button>` : `<button class="btn btn-sm btn-primary" data-act="ask-reason" data-kind="grant" data-id="${hit.id}">Give free access</button>`}</td></tr>
           </tbody></table></div>
-          <p class="muted small" style="margin:0">Giving or revoking access changes only this semester's transport card. A reason is required and saved in the audit log with your name.</p>`}
+          <p class="muted small" style="margin:0">Giving or revoking access changes only this semester's transport card. A reason is required and saved in the audit log with your name.</p>
+          <h3 style="margin-top:6px">Transport history</h3>${riderHistoryHTML(hit)}`}
       </section>`;
     }
     case 'complaints': case 'help': {
@@ -1017,6 +1054,34 @@ async function copyPayments() {
   catch (e) { toast('Copy was blocked by the browser'); }
 }
 
+function riderHistoryHTML(r) {
+  const h = historyOf(r.id);
+  const recent = [0, 1, 2, 3, 4, 5, 6].flatMap((o) => paymentsFor(o).filter((p) => p.id === r.id).map((p) => ({ when: `${p.date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })} · ${fmt(p.min)}`, sort: `${isoDate(p.date)}-${String(Math.floor(p.min / 60)).padStart(2, '0')}:${String(p.min % 60).padStart(2, '0')}`, tran: p.tran, semester: p.semester, amount: p.amount, method: p.method, status: p.status, note: p.status === 'Pending' ? 'Waiting for gateway confirmation' : '' })));
+  const pays = [...recent, ...h.payments].sort((a, b) => b.sort.localeCompare(a.sort));
+  const paid = pays.filter((p) => p.status === 'Successful');
+  const last = paid[0];
+  const cls = { Successful: 'ok', Failed: 'crit', Pending: 'warn', Refunded: 'none', Active: 'ok', Expired: 'none', Revoked: 'crit', Requested: 'warn', 'Pending payment': 'warn', Used: 'none', Approved: 'ok', 'Waiting for decision': 'warn', Rejected: 'crit' };
+  const empty = (t) => `<p class="muted small" style="margin:0">${t}</p>`;
+  return `
+    <div class="pred-nums" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:0">
+      <div class="tile"><div class="label">Total paid</div><div class="big">${taka(paid.reduce((t, p) => t + p.amount, 0))}</div><div class="sub">${paid.length} payment${paid.length === 1 ? '' : 's'} · ${new Set(paid.map((p) => p.semester)).size} semester${new Set(paid.map((p) => p.semester)).size === 1 ? '' : 's'}</div></div>
+      <div class="tile"><div class="label">Last paid</div><div class="big" style="font-size:20px">${last ? esc(last.when) : 'Never'}</div><div class="sub">${last ? `${taka(last.amount)} via ${last.method} · ${last.semester}` : 'No successful payment on record'}</div></div>
+      <div class="tile"><div class="label">This semester</div><div class="big" style="font-size:20px">${h.cards[0] && h.cards[0].sem === 'Fall 2026' ? h.cards[0].status : 'No card'}</div><div class="sub">${h.cards[0] && h.cards[0].sem === 'Fall 2026' ? esc(h.cards[0].how) : `${h.passes.filter((x) => x.status === 'Used').length} day pass used`}</div></div>
+    </div>
+    <div class="card"><h3 style="margin-bottom:8px">Payments</h3>
+      ${pays.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Date · time</th><th>Transaction ID</th><th>Semester</th><th style="text-align:right">Amount</th><th>Method</th><th>Status</th></tr></thead><tbody>
+      ${pays.map((p) => `<tr><td class="small num">${esc(p.when)}</td><td class="mono small">${p.tran}</td><td>${p.semester}</td><td class="num" style="text-align:right"><b>${taka(p.amount)}</b></td><td>${p.method}</td><td><span class="pill ${cls[p.status]}">${p.status}</span>${p.note ? `<div class="muted small">${esc(p.note)}</div>` : ''}</td></tr>`).join('')}
+      </tbody></table></div>` : empty('No payments on record.')}</div>
+    <div class="pred-grid">
+      <div class="card"><h3 style="margin-bottom:8px">Transport cards</h3>
+        ${h.cards.length ? `<table class="data"><thead><tr><th>Semester</th><th>Status</th><th>Valid</th></tr></thead><tbody>${h.cards.map((c) => `<tr><td><b>${c.sem}</b><div class="muted small">${esc(c.how)}</div></td><td><span class="pill ${cls[c.status] || 'none'}">${c.status}</span></td><td class="small">${c.valid}</td></tr>`).join('')}</tbody></table>` : empty('Never had a transport card.')}</div>
+      <div class="card"><h3 style="margin-bottom:8px">One Day Pass</h3>
+        ${h.passes.length ? `<table class="data"><thead><tr><th>Date</th><th>Route</th><th>Status</th></tr></thead><tbody>${h.passes.map((x) => `<tr><td><b class="small">${x.date}</b><div class="muted small">${esc(x.how)}</div></td><td>${x.route}</td><td><span class="pill ${cls[x.status] || 'none'}">${x.status}</span></td></tr>`).join('')}</tbody></table>` : empty('No day passes.')}</div>
+    </div>
+    <div class="card"><h3 style="margin-bottom:8px">Access changes by the transport office</h3>
+      ${h.audit.length ? h.audit.map((a) => `<div class="feed-item"><span class="muted small">${a.when}</span><div><b>${esc(a.action)}</b> · by ${esc(a.who)}<div class="muted small">Reason: ${esc(a.reason)}</div></div></div>`).join('') : empty('None. Grants, revokes and approvals without payment appear here with the reason.')}</div>`;
+}
+
 function sevenDayTable(withAction) {
   return `<div class="table-wrap"><table class="data"><thead><tr><th>Date</th><th>Students in</th><th>Students out</th><th>Faculty in / out</th><th>Buses (busiest wave)</th><th>Slots allocated</th><th>Remaining</th>${withAction ? '<th></th>' : ''}</tr></thead><tbody>
   ${[0, 1, 2, 3, 4, 5, 6].map((d) => {
@@ -1112,13 +1177,21 @@ function confirmReason() {
   const reason = $('#reason-text').value.trim();
   if (!reason) { $('#reason-err').hidden = false; return; }
   const { kind, ref } = state.pending;
+  const stamp = { when: 'Today · 4:12 PM', who: 'Mr. Anisur Rahman (710215)', reason };
+  const setFall = (id, status, how, valid) => { const h = historyOf(id); const c = h.cards.find((x) => x.sem === 'Fall 2026'); if (c) Object.assign(c, { status, how, valid: valid || c.valid }); else h.cards.unshift({ sem: 'Fall 2026', status, how, valid: valid || '—' }); };
   if (kind === 'card-approve') {
     const c = state.cardReq.splice(Number(ref), 1)[0];
+    const rr = RIDERS.find((x) => x.id === c.id);
+    if (rr) rr.card = 'Active · Fall 2026 (free)';
+    setFall(c.id, 'Active', 'Approved without payment', '19 Nov – 31 Dec 2026');
+    historyOf(c.id).audit.unshift({ ...stamp, action: 'Card approved without payment' });
     state.feed.unshift({ time: '4:12 PM', text: `Card approved without payment · ID ${c.id} · by Anisur Rahman`, kind: 'ok' });
     toast(`ID ${c.id}: card approved · reason saved in audit log`);
   } else {
     const r = RIDERS.find((x) => x.id === ref);
     r.card = kind === 'grant' ? 'Active · Fall 2026 (free)' : 'Revoked';
+    if (kind === 'grant') setFall(r.id, 'Active', 'Free access by the transport office', '19 Nov – 31 Dec 2026'); else setFall(r.id, 'Revoked', 'Revoked by the transport office');
+    historyOf(r.id).audit.unshift({ ...stamp, action: kind === 'grant' ? 'Free access given' : 'Access revoked' });
     state.feed.unshift({ time: '4:12 PM', text: `Transport access ${kind === 'grant' ? 'given' : 'revoked'} · ID ${r.id} · by Anisur Rahman`, kind: kind === 'grant' ? 'ok' : 'warn' });
     toast(`ID ${r.id}: access ${kind === 'grant' ? 'given' : 'revoked'} · reason saved in audit log`);
   }
@@ -1138,8 +1211,8 @@ function open7() {
 
 /* ---------- user app ---------- */
 const USERS = {
-  student: { name: 'Khalilur Rahman', initials: 'KR', id: '232-35-797', line: 'Software Engineering · Batch 41 · Sec G', route: 'R-01', aud: 'student', cat: 'Student (3 semesters/year)', fee: '৳4,500' },
-  faculty: { name: 'Dr. Farhana Islam', initials: 'FI', id: '710388', line: 'Assistant Professor · SWE · Initial FI', route: 'R-02', aud: 'faculty', cat: 'Faculty', fee: '৳3,000' }
+  student: { name: 'Khalilur Rahman', initials: 'KR', id: '232-35-797', line: 'Software Engineering · Batch 41 · Sec G', route: 'R-01', aud: 'student', cat: 'Student (3 semesters/year)', fee: '৳4,500', issued: '19 Nov 2026' },
+  faculty: { name: 'Dr. Farhana Islam', initials: 'FI', id: '710388', line: 'Assistant Professor · SWE · Initial FI', route: 'R-02', aud: 'faculty', cat: 'Faculty', fee: '৳3,000', issued: '02 Sep 2026' }
 };
 /* Sample accounts used when the authority previews the app. Real accounts are never opened from the dashboard. */
 const PREVIEW_USERS = {
@@ -1252,7 +1325,7 @@ function cardScreen(role) {
     <div class="id-card">
       <div class="id-card-top"><div class="photo">${u.initials}</div><div><div class="small" style="opacity:.85;font-weight:700">DAFFODIL INTERNATIONAL UNIVERSITY</div><b style="font-size:17px">${u.name}</b><div class="small">${u.line}</div></div></div>
       <dl class="kv"><dt>ID</dt><dd class="mono">${u.id}</dd><dt>${pass ? 'Pass' : 'Card'}</dt><dd>${pass ? `One Day Pass · ${p.passDate}` : `Transport card · ${u.cat}`}</dd><dt>Route</dt><dd>${RID[u.route].name} ⇄ DSC</dd>
-        <dt>Issued</dt><dd>${pass ? '19 Nov 2026' : '02 Sep 2026'}</dd><dt>Expires</dt><dd>${pass ? `${p.passDate}, 11:59 PM` : '31 Dec 2026'}</dd><dt>Status</dt><dd><span class="pill ok">Active</span></dd></dl>
+        <dt>Issued</dt><dd>${pass ? '19 Nov 2026' : (u.issued || '01 Sep 2026')}</dd><dt>Expires</dt><dd>${pass ? `${p.passDate}, 11:59 PM` : '31 Dec 2026'}</dd><dt>Status</dt><dd><span class="pill ok">Active</span></dd></dl>
       <div class="qr-box"><canvas id="qr-${role}" width="33" height="33" aria-label="Boarding QR code (sample)"></canvas><span class="small muted">Show to the supervisor when boarding · refreshes in <b data-qrtimer>30</b>s · works offline</span></div>
     </div>`;
 }
@@ -1399,6 +1472,7 @@ document.addEventListener('click', (e) => {
     case 'dp-approve': { const d = state.dayReq.splice(Number(t.dataset.i), 1)[0]; state.dayAuto.unshift({ ...d }); render(); toast(`${d.name}: extra day pass approved for ${d.date}`); break; }
     case 'dp-delete': { const d = state.dayReq.splice(Number(t.dataset.i), 1)[0]; render(); toast(`Day pass request from ${d.name} rejected`); break; }
     case 'ticket': { const list = t.dataset.list === 'help' ? state.help : state.complaints; const c = list[Number(t.dataset.i)]; c.unread = false; c.status = c.status === 'resolved' ? 'open' : 'resolved'; render(); break; }
+    case 'fill-id': state.search = t.dataset.id; render(); break;
     case 'pay-csv': savePayments('csv'); break;
     case 'pay-xlsx': savePayments('xlsx'); break;
     case 'pay-copy': copyPayments(); break;
