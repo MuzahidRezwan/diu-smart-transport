@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@diu/shared": "0.1.0",
-    "@electric-sql/pglite": "^0.3.15",
+    "@electric-sql/pglite": "^0.5.17",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
