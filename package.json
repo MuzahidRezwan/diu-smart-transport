@@ -12,6 +12,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "secrets:check": "node scripts/check-secrets.mjs --all && node scripts/check-secrets.mjs --history",
     "build": "npm run build -w @diu/shared && npm run build -w @diu/api && npm run build -w @diu/web",
     "test": "npm run test -w @diu/shared && npm run test -w @diu/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
