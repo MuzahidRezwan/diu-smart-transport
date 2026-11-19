@@ -54,6 +54,8 @@ GoogleService-Info.plist
 *.sql.gz
 *.dump.gpg
 backups/
+# ML training exports: pseudonymised, still personal data
+training-export*.json
 .npmrc
 .pypirc
 .netrc

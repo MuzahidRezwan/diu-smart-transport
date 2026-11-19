@@ -28,6 +28,7 @@ const FORBIDDEN_FILES = [
   { re: /(^|\/)(\.npmrc|\.pypirc|\.netrc)$/, why: 'package registry / login credentials' },
   { re: /\.(sqlite3?|db|dump|dump\.gpg|sql\.gz)$/i, why: 'database dump (may contain personal data)' },
   { re: /(^|\/)backups\//i, why: 'backup folder (may contain personal data)' },
+  { re: /(^|\/)training-export[^/]*\.json$/i, why: 'ML training export (pseudonymised personal data)' },
 ];
 
 /** Content patterns that are almost always a real secret. */
