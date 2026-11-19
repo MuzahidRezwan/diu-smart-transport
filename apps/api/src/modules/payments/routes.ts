@@ -39,7 +39,7 @@ export function paymentsGatewayRouter(ctx: AppContext): Router {
       const btn = (m: string) => `<button name="method" value="${m}" style="padding:10px 14px;margin:4px">${m === 'fail' ? 'Simulate failure' : `Pay with ${m}`}</button>`;
       res.type('html').send(`<!doctype html><meta charset="utf-8"><title>Mock payment</title><body style="font-family:system-ui;max-width:440px;margin:60px auto">
 <h2>Mock payment gateway (development only)</h2><p>Transaction <code>${tranId}</code> · ৳${amount}</p>
-<form method="post" action="/payments/mock/complete"><input type="hidden" name="tran_id" value="${tranId}">${['bKash', 'Nagad', 'Card', 'fail'].map(btn).join('')}</form></body>`);
+<form method="post" action="${ctx.config.basePath}/payments/mock/complete"><input type="hidden" name="tran_id" value="${tranId}">${['bKash', 'Nagad', 'Card', 'fail'].map(btn).join('')}</form></body>`);
     });
     r.post('/mock/complete', async (req, res) => {
       const body = parse(z.object({ tran_id: z.string(), method: z.enum(['bKash', 'Nagad', 'Card', 'fail']) }), req.body);

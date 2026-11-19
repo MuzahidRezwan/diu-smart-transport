@@ -29,6 +29,13 @@ export async function slotsForDay(db: DB, date: string, filter: { routeId?: stri
 
 export function publicRouter(ctx: AppContext): Router {
   const r = Router();
+  if (ctx.config.DEMO_MODE) {
+    // Public demo only: the sample sign-ins shown on the login page.
+    r.get('/demo', (_req, res) => {
+      res.json({ adminId: '710215', adminPassword: ctx.config.DEMO_ADMIN_PASSWORD ?? null, studentId: '232-35-797', facultyId: '710410' });
+    });
+  }
+
   r.get('/routes', async (_req, res) => {
     res.set('cache-control', 'public, max-age=300');
     res.json((await listRoutesWithStops(ctx.db, true)).map(({ id, code, name, kind, durationMinutes, stops }) => ({ id, code, name, kind, durationMinutes, stops })));

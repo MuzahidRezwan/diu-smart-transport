@@ -118,7 +118,7 @@ export class MockSsoProvider implements SsoProvider {
   constructor(private readonly publicApiUrl: string) {}
 
   async authorizationUrl(p: { state: string; redirectUri: string }): Promise<string> {
-    const url = new URL('/auth/sso/mock-authorize', this.publicApiUrl);
+    const url = new URL(`${this.publicApiUrl.replace(/\/+$/, '')}/auth/sso/mock-authorize`);
     url.searchParams.set('state', p.state);
     return url.toString();
   }

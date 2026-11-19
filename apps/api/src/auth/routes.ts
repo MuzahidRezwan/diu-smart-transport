@@ -33,7 +33,7 @@ export function authRouter(ctx: AppContext): Router {
   const r = Router();
   const limiter = rateLimit({ windowMs: 60_000, limit: ctx.config.NODE_ENV === 'test' ? 1000 : 20, standardHeaders: 'draft-7', legacyHeaders: false });
   r.use(limiter);
-  const callbackUrl = new URL('/auth/sso/callback', ctx.config.PUBLIC_API_URL).toString();
+  const callbackUrl = ctx.config.apiUrl('/auth/sso/callback');
 
   /* ---------- riders: university SSO ---------- */
 
@@ -52,11 +52,11 @@ export function authRouter(ctx: AppContext): Router {
       const state = String(req.query.state ?? '').replace(/[^A-Za-z0-9_-]/g, '');
       // The form posts here and the callback then redirects to the web app or mobile app, so those targets must be allowed.
       const mobileScheme = `${new URL(ctx.config.MOBILE_REDIRECT_URI).protocol}`;
-      res.setHeader('content-security-policy', `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${new URL(ctx.config.WEB_APP_URL).origin} ${mobileScheme}; frame-ancestors 'none'`);
+      res.setHeader('content-security-policy', `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${new URL(ctx.config.WEB_APP_URL).origin} ${mobileScheme}; frame-ancestors ${ctx.config.DEMO_MODE ? 'https://huggingface.co' : "'none'"}`);
       res.type('html').send(`<!doctype html><meta charset="utf-8"><title>Mock DIU sign-in</title>
 <body style="font-family:system-ui;max-width:420px;margin:60px auto">
-<h2>Mock DIU sign-in (development only)</h2><p>Type any university ID, e.g. 232-35-797 (student) or 710388 (faculty).</p>
-<form action="/auth/sso/callback" method="get"><input type="hidden" name="state" value="${state}">
+<h2>Mock DIU sign-in (${ctx.config.DEMO_MODE ? 'demo' : 'development only'})</h2><p>Stands in for the university's login page. Type a university ID, e.g. 232-35-797 (student with a transport card) or 710410 (faculty with a card). Any other ID signs in as a new rider without a card.</p>
+<form action="${ctx.config.basePath}/auth/sso/callback" method="get"><input type="hidden" name="state" value="${state}">
 <input name="mock_id" placeholder="University ID" required style="padding:8px;width:100%"><br><br><button>Sign in</button></form></body>`);
     });
   }
@@ -143,6 +143,13 @@ export function authRouter(ctx: AppContext): Router {
     }
     await ctx.db.update(adminAccounts).set({ failedAttempts: 0, lockedUntil: null }).where(eq(adminAccounts.userId, row.user.id));
 
+    if (ctx.config.DEMO_MODE) {
+      // Public demo only (refused in production): visitors share one account, so 2FA is skipped.
+      await ctx.db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, row.user.id));
+      await audit(ctx.db, { actorId: row.user.id, action: 'auth.login', entity: 'admin_account', entityId: row.user.id, req });
+      return void res.json({ ...(await issueSession(ctx, row.user, req, res, 'web')), demo: true });
+    }
+
     let enrollment: { otpauthUrl: string; secret: string } | undefined;
     if (!row.acc.totpEnabled) {
       const secret = authenticator.generateSecret();
@@ -177,6 +184,7 @@ export function authRouter(ctx: AppContext): Router {
 
   r.post('/authority/change-password', authenticate(ctx), async (req, res) => {
     if (req.auth?.role !== 'authority') throw forbidden();
+    if (ctx.config.DEMO_MODE) throw forbidden('Password changes are turned off in the demo, so the next visitor can still sign in.');
     const body = parse(z.object({
       currentPassword: z.string().min(1),
       newPassword: z.string().min(12, 'Use at least 12 characters').max(200),
@@ -209,13 +217,13 @@ export function authRouter(ctx: AppContext): Router {
       const family = await familyOf(ctx, raw);
       if (family) await revokeFamily(ctx, family);
     }
-    clearRefreshCookie(res);
+    clearRefreshCookie(ctx, res);
     res.json({ ok: true });
   });
 
   r.post('/logout-all', authenticate(ctx), async (req, res) => {
     await revokeAllForUser(ctx, req.auth!.userId);
-    clearRefreshCookie(res);
+    clearRefreshCookie(ctx, res);
     res.json({ ok: true });
   });
 

@@ -124,7 +124,7 @@ export class MockGateway implements PaymentGateway {
 
   async initSession(input: InitSessionInput): Promise<{ redirectUrl: string }> {
     this.sessions.set(input.tranId, input.amountBdt);
-    const url = new URL('/payments/mock/pay', this.publicApiUrl);
+    const url = new URL(`${this.publicApiUrl.replace(/\/+$/, '')}/payments/mock/pay`);
     url.searchParams.set('tran_id', input.tranId);
     url.searchParams.set('amount', String(input.amountBdt));
     return { redirectUrl: url.toString() };

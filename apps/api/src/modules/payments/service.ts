@@ -38,7 +38,7 @@ export async function startCardPayment(ctx: AppContext, userId: string, routeId:
 
   // The rider's own contact details go to the gateway for their own payment receipt.
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
-  const base = ctx.config.PUBLIC_API_URL;
+  const base = ctx.config.apiUrl('');
   const session = await ctx.gateway.initSession({
     tranId,
     amountBdt: fee.amountBdt,

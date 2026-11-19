@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import express from 'express';
 import { Server as SocketServer } from 'socket.io';
 import { and, eq } from 'drizzle-orm';
 import { createApp } from './app.js';
@@ -6,10 +7,24 @@ import { buildContext } from './bootstrap.js';
 import { verifyAccessToken } from './auth/tokens.js';
 import { semesters, transportCards } from './db/schema.js';
 import { logger } from './logger.js';
+import { serveWebApp } from './web-static.js';
 
 const { ctx, database } = await buildContext();
 const app = createApp(ctx);
-const server = createServer(app);
+const { basePath } = ctx.config;
+// With a base path (e.g. /api) the API is mounted there, and the web app can be served from the same origin.
+const root = basePath ? express() : app;
+if (basePath) {
+  root.disable('x-powered-by');
+  root.use(basePath, app);
+  if (ctx.config.WEB_DIST_DIR) {
+    serveWebApp(root, ctx.config.WEB_DIST_DIR, {
+      https: ctx.config.PUBLIC_API_URL.startsWith('https://'),
+      framedBy: ctx.config.DEMO_MODE ? 'https://huggingface.co' : undefined,
+    });
+  }
+}
+const server = createServer(root);
 
 /**
  * Socket.IO rooms:
@@ -17,7 +32,7 @@ const server = createServer(app);
  *   route:<id>     - buses and allocation changes for one route (active card holders of that route)
  *   riders         - general notices
  */
-const io = new SocketServer(server, { cors: { origin: ctx.config.corsOrigins, credentials: true }, path: '/realtime' });
+const io = new SocketServer(server, { cors: { origin: ctx.config.corsOrigins, credentials: true }, path: `${basePath}/realtime` });
 ctx.realtime = { emit: (room, event, data) => { io.to(room).emit(event, data); } };
 
 io.use(async (socket, next) => {

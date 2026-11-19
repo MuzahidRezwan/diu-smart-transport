@@ -60,7 +60,7 @@ function setRefreshCookie(ctx: AppContext, res: Response, raw: string) {
     httpOnly: true,
     secure: ctx.config.isProd,
     sameSite: 'strict',
-    path: '/auth',
+    path: `${ctx.config.basePath}/auth`,
     maxAge: ctx.config.REFRESH_TOKEN_TTL_DAYS * 86_400_000,
   });
 }
@@ -110,6 +110,6 @@ export async function familyOf(ctx: AppContext, raw: string): Promise<string | n
   return row?.familyId ?? null;
 }
 
-export function clearRefreshCookie(res: Response) {
-  res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+export function clearRefreshCookie(ctx: AppContext, res: Response) {
+  res.clearCookie(REFRESH_COOKIE, { path: `${ctx.config.basePath}/auth` });
 }

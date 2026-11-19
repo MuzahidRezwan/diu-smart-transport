@@ -50,6 +50,12 @@ const EnvSchema = z.object({
   PUSH_PROVIDER: z.enum(['console', 'expo']).default('console'),
   EXPO_ACCESS_TOKEN: z.string().optional(),
 
+  /** Public demo: authority sign-in without 2FA and a sample login on the page. Refused in production. */
+  DEMO_MODE: bool.default(false),
+  DEMO_ADMIN_PASSWORD: z.string().optional(),
+  /** Serve the built web app from this folder, with the API under PUBLIC_API_URL's path (e.g. /api). */
+  WEB_DIST_DIR: z.string().optional(),
+
   BOOTSTRAP_ADMIN_ID: z.string().optional(),
   BOOTSTRAP_ADMIN_NAME: z.string().optional(),
   BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
@@ -62,6 +68,10 @@ export interface Config extends Omit<Env, 'JWT_SECRET' | 'DATA_ENCRYPTION_KEY'> 
   dataKey: Buffer;
   corsOrigins: string[];
   isProd: boolean;
+  /** Path the API is mounted under: '' normally, '/api' when one server also serves the web app. */
+  basePath: string;
+  /** Absolute public URL of an API path, e.g. apiUrl('/auth/sso/callback'). */
+  apiUrl(path: string): string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, log: (m: string) => void = console.warn): Config {
@@ -83,6 +93,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, log: (m: string
     if (e.PAYMENT_GATEWAY === 'mock') throw new Error('PAYMENT_GATEWAY=mock is not allowed in production');
     if (!e.ML_SERVICE_TOKEN) throw new Error('ML_SERVICE_TOKEN is required in production');
   }
+  if (isProd && e.DEMO_MODE) throw new Error('DEMO_MODE is not allowed in production');
+  const basePath = new URL(e.PUBLIC_API_URL).pathname.replace(/\/+$/, '');
+  if (e.WEB_DIST_DIR && !basePath) throw new Error('WEB_DIST_DIR needs PUBLIC_API_URL with a path, such as https://host/api');
   if (e.SSO_MODE === 'oidc' && !(e.OIDC_ISSUER && e.OIDC_CLIENT_ID && e.OIDC_CLIENT_SECRET)) {
     throw new Error('SSO_MODE=oidc needs OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET');
   }
@@ -111,5 +124,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, log: (m: string
     dataKey,
     corsOrigins: e.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
     isProd,
+    basePath,
+    apiUrl: (path: string) => `${e.PUBLIC_API_URL.replace(/\/+$/, '')}${path}`,
   };
 }
