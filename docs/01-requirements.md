@@ -53,6 +53,8 @@ Version 0.1 · Scope: Daffodil International University (DIU) transport, main ca
 - FR-5.5 Authority can revoke a card.
 - FR-5.6 The digital card shows photo, name, department, ID, route, issue and expiry date, and a **signed, rotating QR code** for boarding.
 - FR-5.7 Cards expire at the end of the semester; renewal reminders are sent before that.
+- FR-5.8 **Payments & collection report** for the authority: pick a day (or a date range) and see how many riders paid, the total collected, a breakdown by payment method and by rider type, failed/pending and refunded counts, and whether the day matches the gateway settlement.
+- FR-5.9 The list (date, time, transaction ID, university ID, name, rider type, route, semester, amount, method, status) can be **downloaded as Excel (.xlsx) or CSV**, filtered by status and method. The file never contains phone, email or department. Download needs the `payments.export` permission and every download is audit-logged.
 
 ### FR-6 One Day Pass
 - FR-6.1 A user without an active card can request a one-day pass for a date and route.
