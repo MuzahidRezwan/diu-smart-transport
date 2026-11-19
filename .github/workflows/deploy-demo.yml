@@ -1,0 +1,87 @@
+name: Deploy demo
+
+# Publishes the public demo (deploy/demo/Dockerfile) to a Hugging Face Space.
+# One-time setup: add the repository secret HF_TOKEN (a Hugging Face token with
+# write access). Optional variable HF_SPACE (owner/name); default <you>/diu-smart-transport.
+# Without HF_TOKEN this workflow does nothing.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: true
+
+jobs:
+  huggingface:
+    name: Hugging Face Space
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check setup
+        id: setup
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::notice::Demo not deployed: add the HF_TOKEN secret (docs/12-deployment-and-ops.md, Public demo)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.setup.outputs.ready == 'true'
+
+      - name: Assemble the Space
+        if: steps.setup.outputs.ready == 'true'
+        run: |
+          set -eu
+          dest="$RUNNER_TEMP/space"
+          mkdir -p "$dest/apps" "$dest/services" "$dest/deploy"
+          cp package.json package-lock.json tsconfig.base.json "$dest/"
+          cp -r packages "$dest/"
+          cp -r apps/api apps/web "$dest/apps/"
+          cp -r services/ml "$dest/services/"
+          cp -r deploy/demo "$dest/deploy/"
+          cp deploy/demo/Dockerfile "$dest/Dockerfile"
+          cp deploy/huggingface/README.md "$dest/README.md"
+          node scripts/check-secrets.mjs --all   # never publish a tree the guard would refuse
+
+      - uses: actions/setup-python@v7
+        if: steps.setup.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Upload to Hugging Face
+        if: steps.setup.outputs.ready == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          pip install --quiet "huggingface_hub>=0.30"
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          space = os.environ.get("HF_SPACE") or f"{api.whoami()['name']}/diu-smart-transport"
+          api.create_repo(space, repo_type="space", space_sdk="docker", exist_ok=True)
+          api.upload_folder(
+              folder_path=os.path.join(os.environ["RUNNER_TEMP"], "space"),
+              repo_id=space,
+              repo_type="space",
+              delete_patterns="*",
+              commit_message=f"Deploy {os.environ['GITHUB_SHA'][:7]} from GitHub",
+          )
+          owner, name = space.split("/")
+          host = f"{owner}-{name}".lower().replace("_", "-").replace(".", "-")
+          print(f"Space: https://huggingface.co/spaces/{space}")
+          print(f"App:   https://{host}.hf.space  (first build takes about 10 minutes)")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"Demo deployed: https://{host}.hf.space\n")
+          PY
