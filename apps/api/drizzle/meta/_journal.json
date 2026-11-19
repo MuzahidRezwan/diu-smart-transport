@@ -15,6 +15,13 @@
       "when": 1795089204571,
       "tag": "0001_privacy_boundary",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795095904617,
+      "tag": "0002_ticket_number_sequences",
+      "breakpoints": true
     }
   ]
 }

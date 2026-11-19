@@ -7,7 +7,7 @@
  */
 import { sql } from 'drizzle-orm';
 import {
-  bigserial, boolean, date, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text,
+  bigserial, boolean, date, doublePrecision, index, integer, jsonb, pgEnum, pgSequence, pgTable, primaryKey, smallint, text,
   timestamp, uniqueIndex, uuid,
 } from 'drizzle-orm/pg-core';
 import {
@@ -375,6 +375,10 @@ export const notices = pgTable('notices', {
   publishedBy: uuid('published_by'),
   publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Ticket numbers (C-1001, H-1001). Sequences stay unique when many riders write at once. */
+export const ticketComplaintSeq = pgSequence('ticket_complaint_seq', { startWith: 1001 });
+export const ticketHelpSeq = pgSequence('ticket_help_seq', { startWith: 1001 });
 
 /** Complaints, suggestions and help requests. Staff see them by number and route only. */
 export const tickets = pgTable('tickets', {

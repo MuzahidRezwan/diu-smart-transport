@@ -16,10 +16,12 @@ import { notFound, parse } from '../../lib/errors.js';
 import { notify } from '../../notifications/push.js';
 import { actorId } from '../common.js';
 
+/** Next ticket number from a database sequence, so concurrent requests never share one. */
 export async function nextTicketNumber(db: DB, kind: 'complaint' | 'suggestion' | 'help'): Promise<string> {
-  const prefix = kind === 'help' ? 'H' : 'C';
-  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(tickets).where(kind === 'help' ? eq(tickets.kind, 'help') : inArray(tickets.kind, ['complaint', 'suggestion']));
-  return `${prefix}-${1001 + Number(row?.n ?? 0)}`;
+  const help = kind === 'help';
+  const result = await db.execute(help ? sql`select nextval('ticket_help_seq') as n` : sql`select nextval('ticket_complaint_seq') as n`);
+  const [row] = (result as unknown as { rows: { n: string | number }[] }).rows;
+  return `${help ? 'H' : 'C'}-${Number(row!.n)}`;
 }
 
 /** Staff-safe projection: no user ID, no name. */
