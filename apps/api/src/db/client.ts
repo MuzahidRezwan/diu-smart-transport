@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import type { PgDatabase } from 'drizzle-orm/pg-core';
 import * as schema from './schema.js';
+import { logger } from '../logger.js';
 
 /** Works for both node-postgres and PGlite. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,11 +55,15 @@ export async function connect(opts: {
     const adminPool = opts.adminDatabaseUrl && opts.adminDatabaseUrl !== opts.databaseUrl
       ? new Pool({ connectionString: opts.adminDatabaseUrl, max: 10 })
       : pool;
+    // An idle connection that the server closes (restart, failover) emits 'error' on the pool;
+    // without a listener that error would crash the whole process.
+    for (const p of new Set([pool, adminPool])) p.on('error', (err) => logger.warn({ err }, 'idle database connection closed'));
     const db = drizzle(pool, { schema }) as unknown as DB;
     const adminDb = adminPool === pool ? db : (drizzle(adminPool, { schema }) as unknown as DB);
     if (opts.migrate) {
       const { migrate } = await import('drizzle-orm/node-postgres/migrator');
       const ownerPool = new Pool({ connectionString: opts.migrationDatabaseUrl ?? opts.databaseUrl, max: 1 });
+      ownerPool.on('error', (err) => logger.warn({ err }, 'idle migration connection closed'));
       try {
         const owner = drizzle(ownerPool, { schema }) as unknown as DB;
         await migrate(owner as never, { migrationsFolder: MIGRATIONS_DIR });
