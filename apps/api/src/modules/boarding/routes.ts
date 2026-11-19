@@ -3,7 +3,7 @@
  * prediction model (who actually rode which trip) and marks day passes used.
  */
 import { Router } from 'express';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { boardingScanSchema, dhakaDate } from '@diu/shared';
 import type { AppContext } from '../../context.js';
 import { boardingEvents, buses, dayPasses, semesters, transportCards, users } from '../../db/schema.js';
@@ -17,6 +17,11 @@ export function boardingRouter(ctx: AppContext): Router {
   const r = Router();
   const db = ctx.db;
   r.use(authenticate(ctx), requireRoles('supervisor'));
+
+  /** Buses a supervisor can pick for their trip (codes only). */
+  r.get('/buses', async (_req, res) => {
+    res.json(await db.select({ id: buses.id, code: buses.code }).from(buses).where(eq(buses.isActive, true)).orderBy(asc(buses.code)));
+  });
 
   r.post('/scan', async (req, res) => {
     const body = parse(boardingScanSchema, req.body);
