@@ -31,7 +31,7 @@ export async function readPredictions(db: DB, from: string, days: number) {
     serviceDate: predictions.serviceDate, timeSlotId: predictions.timeSlotId, expectedMax: predictions.expectedMax,
     predicted: predictions.predicted, p90: predictions.p90, modelVersion: predictions.modelVersion,
     routeId: routes.id, routeCode: routes.code, routeName: routes.name, routeKind: routes.kind,
-    direction: timeSlots.direction, audience: timeSlots.audience, departureMinutes: timeSlots.departureMinutes,
+    direction: timeSlots.direction, audience: timeSlots.audience, departureMinutes: timeSlots.departureMinutes, note: timeSlots.note,
   }).from(predictions)
     .innerJoin(timeSlots, eq(timeSlots.id, predictions.timeSlotId))
     .innerJoin(routes, eq(routes.id, timeSlots.routeId))

@@ -200,6 +200,8 @@ export const timeSlots = pgTable('time_slots', {
   weekdays: smallint('weekdays').array().notNull(),
   semesterId: uuid('semester_id').references(() => semesters.id),
   isActive: boolean('is_active').notNull().default(true),
+  /** Shown to riders, e.g. "Goes up to Polashbari U-turn only", "One bus assigned only". */
+  note: text('note'),
 }, (t) => [index('time_slots_route_idx').on(t.routeId)]);
 
 /* ---------------- allocation & prediction ---------------- */

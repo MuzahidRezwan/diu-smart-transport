@@ -23,6 +23,7 @@ export async function slotsForDay(db: DB, date: string, filter: { routeId?: stri
     slots: rows.filter((r) => r.slot.weekdays.includes(wd)).map((r) => ({
       timeSlotId: r.slot.id, routeId: r.slot.routeId, routeCode: r.routeCode, routeName: r.routeName, routeKind: r.routeKind,
       direction: r.slot.direction, audience: r.slot.audience, departure: toHHMM(r.slot.departureMinutes), departureMinutes: r.slot.departureMinutes,
+      note: r.slot.note,
     })),
   };
 }

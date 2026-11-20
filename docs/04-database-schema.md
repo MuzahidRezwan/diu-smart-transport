@@ -81,7 +81,7 @@ erDiagram
 | `bus_unavailability` | Bus off the road for a date range (repair, fitness) | Removed from "available" for those dates |
 | `routes` | DSC ↔ Mirpur, Uttara, Dhanmondi, …, and shuttles | `kind` (`regular`, `shuttle`); `duration_minutes` and `turnaround_minutes` drive the busy-window calculation |
 | `route_stops` | Ordered stops with coordinates for the route map | unique (`route_id`, `seq`) |
-| `time_slots` | A fixed departure: route + direction + audience + time + weekdays | `departure_minutes`; `weekdays` array (0 = Sunday); optional `semester_id` for semester-specific timetables |
+| `time_slots` | A fixed departure: route + direction + audience + time + weekdays | `departure_minutes`; `weekdays` array (0 = Sunday, 5 = Friday); optional `semester_id` for semester-specific timetables; `note` shown to riders for partial trips ("Goes up to Polashbari U-turn only"). `audience = faculty` marks staff-only trips; staff ride student trips too. |
 
 ### Prediction and allocation
 
@@ -160,6 +160,7 @@ The transport office must not see riders' personal records ([07-security.md](07-
 | `0000_init.sql` | All tables, enums and indexes |
 | `0001_privacy_boundary.sql` | `transport_riders` view and the append-only trigger on `audit_logs` |
 | `0002_ticket_number_sequences.sql` | Sequences for ticket numbers, continuing after any numbers already issued |
+| `0003_time_slot_note.sql` | `time_slots.note`, the timetable's remark on a trip |
 | `roles.sql` | Creates `diu_migrator`, `diu_app`, `transport_admin`, `diu_reporting` and default privileges. Run once as a superuser **before** the first migration (idempotent). Docker compose runs it automatically on first start. |
 | `grants.sql` | Table and column grants for those roles. The API applies it after every migration run, as the owner, whenever the roles exist. |
 
