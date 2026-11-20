@@ -14,13 +14,15 @@ import numpy as np
 from .demand import expected_demand, weekday_js
 from .schemas import CalendarDay, HistoryRow, Rider, Session, Slot
 
-SERVICE_DAYS = [0, 1, 2, 3, 4, 6]
+FRIDAY = 5
+SERVICE_DAYS = [0, 1, 2, 3, 4, 5, 6]  # DIU runs buses on Friday too, at Friday times
 ROUTES = [("R-01", 75, 0, 0.26), ("R-02", 60, 0, 0.22), ("R-03", 95, 20, 0.18), ("R-04", 55, 0, 0.12), ("R-05", 45, 0, 0.10), ("SH-1", 40, 0, 0.12)]
 WAVES = {"student": {"to_campus": ["07:00", "08:30", "10:00"], "from_campus": ["13:00", "14:30", "16:30", "18:00"]},
          "faculty": {"to_campus": ["07:30"], "from_campus": ["17:00"]}}
+FRIDAY_WAVES = {"to_campus": ["07:30"], "from_campus": ["11:30", "16:30"]}  # shared by students and staff
 DEPARTMENTS = ["SWE", "CSE", "EEE", "BBA"]
 CLASS_STARTS = [8 * 60 + 30, 10 * 60, 11 * 60 + 30, 13 * 60, 14 * 60 + 30, 16 * 60]
-WEEKDAY_EFFECT = {6: 1.04, 0: 1.02, 1: 1.0, 2: 0.99, 3: 0.95, 4: 0.86}
+WEEKDAY_EFFECT = {6: 1.04, 0: 1.02, 1: 1.0, 2: 0.99, 3: 0.95, 4: 0.86, 5: 0.78}
 
 
 def _hhmm(t: str) -> int:
@@ -38,7 +40,11 @@ def build_slots() -> list[Slot]:
                 for w in waves:
                     dep = _hhmm(w) - (early if direction == "to_campus" else 0) + (15 if code == "SH-1" else 0)
                     slots.append(Slot(time_slot_id=f"{code}|{aud}|{direction}|{w}", route_id=code, direction=direction, audience=aud,
-                                      departure_minutes=dep, duration_minutes=dur, weekdays=SERVICE_DAYS))
+                                      departure_minutes=dep, duration_minutes=dur, weekdays=[d for d in SERVICE_DAYS if d != FRIDAY]))
+        for direction, waves in FRIDAY_WAVES.items():
+            for w in waves:
+                slots.append(Slot(time_slot_id=f"{code}|student|{direction}|{w}|fri", route_id=code, direction=direction, audience="student",
+                                  departure_minutes=_hhmm(w), duration_minutes=dur, weekdays=[FRIDAY]))
     return slots
 
 
@@ -49,10 +55,11 @@ def generate(seed: int = 42, weeks: int = 16, n_students: int = 2400, start: str
     groups = [(d, str(b), s) for d in DEPARTMENTS for b in range(41, 46) for s in "ABCDEF"]
     for dept, batch, sec in groups:
         for wd in SERVICE_DAYS:
-            if rng.random() < 0.22:
-                continue  # free day
-            first = int(rng.integers(0, 4))
-            for k in range(int(rng.integers(1, 4))):
+            friday = wd == FRIDAY
+            if rng.random() < (0.75 if friday else 0.22):
+                continue  # free day; most sections have no Friday class
+            first = int(rng.integers(1, 3)) if friday else int(rng.integers(0, 4))
+            for k in range(int(rng.integers(1, 3 if friday else 4))):
                 if first + k >= len(CLASS_STARTS):
                     break
                 st = CLASS_STARTS[first + k]

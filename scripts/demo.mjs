@@ -129,9 +129,13 @@ if (!python) {
     run(venvPython, ['-m', 'pip', 'install', '--quiet', '--disable-pip-version-check', '-r', join(ml, 'requirements.txt')]);
     writeFileSync(stamp, reqHash);
   }
-  if (!existsSync(join(modelDir, 'latest.json'))) {
-    say('Training the ridership model on synthetic data (first run only)…');
-    spawnSync(venvPython, ['-m', 'app.train', '--synthetic'], { cwd: ml, stdio: 'ignore', env: { ...process.env, MODEL_DIR: modelDir } });
+  // Retrain when there is no model yet, or when the synthetic data (or how riders are matched) changed.
+  const dataHash = createHash('sha256').update(readFileSync(join(ml, 'app', 'synthetic.py'))).update(readFileSync(join(ml, 'app', 'demand.py'))).digest('hex');
+  const modelStamp = join(modelDir, '.demo-synthetic');
+  if (!existsSync(join(modelDir, 'latest.json')) || !existsSync(modelStamp) || readFileSync(modelStamp, 'utf8') !== dataHash) {
+    say('Training the ridership model on synthetic data (first run, or after the sample data changed)…');
+    const r = spawnSync(venvPython, ['-m', 'app.train', '--synthetic'], { cwd: ml, stdio: 'ignore', env: { ...process.env, MODEL_DIR: modelDir } });
+    if (r.status === 0) writeFileSync(modelStamp, dataHash);
   }
   mlReady = true;
 }

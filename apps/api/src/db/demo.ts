@@ -6,14 +6,15 @@
  *   npm run db:seed && npm run db:demo
  */
 import { eq, sql } from 'drizzle-orm';
-import { addDays, dhakaDate, weekdayOf } from '@diu/shared';
+import { addDays, dhakaDate } from '@diu/shared';
 import { connect } from './client.js';
 import {
-  classSessions, dayPasses, notices, payments, routes, routineVersions, semesters, tickets, transportCards, userProfiles, users,
+  classSessions, dayPasses, notices, payments, routes, routineVersions, semesters, tickets, timeSlots, transportCards, userProfiles, users,
 } from './schema.js';
 import { MockDirectory } from '../auth/providers.js';
 import { SAMPLE_FEES } from './seed-data.js';
 import { encrypt, randomToken } from '../lib/crypto.js';
+import { nextTicketNumber } from '../modules/tickets/routes.js';
 
 if (process.env.NODE_ENV === 'production') { console.error('Refusing to load demo data in production.'); process.exit(1); }
 
@@ -32,20 +33,30 @@ if (!process.env.DATA_ENCRYPTION_KEY) { console.error('Set DATA_ENCRYPTION_KEY i
 const key = Buffer.from(process.env.DATA_ENCRYPTION_KEY, 'base64');
 const routeRows = await db.select().from(routes);
 const regular = routeRows.filter((r) => r.kind === 'regular');
-const weights: Record<string, number> = { 'R-01': 26, 'R-02': 22, 'R-03': 18, 'R-04': 12, 'R-05': 10, 'SH-1': 12 };
+// Riders per route, roughly: busy city routes get more. Codes of the DIU timetable and of the test sample.
+const weights: Record<string, number> = {
+  R1: 14, R2: 12, R3: 8, R4: 14, R5: 5, R6: 6, R7: 5, R8: 8, R9: 4, R10: 5, R11: 8, R12: 5, R13: 6,
+  'R-01': 26, 'R-02': 22, 'R-03': 18, 'R-04': 12, 'R-05': 10, 'SH-1': 12,
+};
 const weighted = routeRows.flatMap((r) => Array(weights[r.code] ?? 5).fill(r));
+// The sketch's sample student rides from Mirpur-10 (R4 in the DIU timetable).
+const khalilRoute = routeRows.find((r) => r.code === 'R4') ?? routeRows.find((r) => r.code === 'R-01') ?? routeRows[0]!;
+// Staff live on routes that have staff trips (the 4:20 PM employee buses), when there are any.
+const staffRouteIds = new Set((await db.selectDistinct({ id: timeSlots.routeId }).from(timeSlots).where(eq(timeSlots.audience, 'faculty'))).map((r) => r.id));
+const staffRoutes = regular.filter((r) => staffRouteIds.has(r.id));
 
 /* ---------- routines ---------- */
 const STARTS = [510, 600, 690, 780, 870, 960];
 const TEACHERS = ['MRH', 'NRS', 'TBR', 'KMR', 'ABK', 'SAK', 'FIS', 'MHK', 'RBA', 'JNT', 'SMA', 'AKZ', 'NZH', 'MTI', 'RKH', 'SHB', 'TAR', 'MNA', 'KRS', 'FHM'];
-const SERVICE = [0, 1, 2, 3, 4, 6];
+const DAYS = [0, 1, 2, 3, 4, 5, 6]; // 5 = Friday: DIU runs Friday buses, and some sections have Friday classes
 for (const [dept, batches] of [['SWE', [39, 40, 41, 42, 43, 44, 45]], ['CSE', [55, 56, 57, 58, 59, 60, 61, 62, 63]]] as const) {
   const [v] = await db.insert(routineVersions).values({ department: dept, fileName: `${dept.toLowerCase()}-routine-demo.csv`, contentHash: `demo-${dept}`, status: 'active', activatedAt: new Date() }).returning();
   const rows = [];
-  for (const b of batches) for (const s of 'ABCDEFGH') for (const wd of SERVICE) {
-    if (rnd() < 0.25) continue;
-    const first = Math.floor(rnd() * 4);
-    const n = 1 + Math.floor(rnd() * 3);
+  for (const b of batches) for (const s of 'ABCDEFGH') for (const wd of DAYS) {
+    const friday = wd === 5;
+    if (rnd() < (friday ? 0.75 : 0.25)) continue; // free day; most sections have no Friday class
+    const first = friday ? 1 + Math.floor(rnd() * 2) : Math.floor(rnd() * 4); // Friday classes start at 10:00 or later
+    const n = 1 + Math.floor(rnd() * (friday ? 2 : 3));
     for (let k = 0; k < n && first + k < STARTS.length; k++) {
       rows.push({ routineVersionId: v!.id, department: dept, batch: String(b), section: s, teacherInitial: pick(TEACHERS), weekday: wd, startMinutes: STARTS[first + k]!, endMinutes: STARTS[first + k]! + 90, courseCode: `${dept}${300 + Math.floor(rnd() * 200)}`, room: `AB4-${600 + Math.floor(rnd() * 20)}` });
     }
@@ -75,7 +86,7 @@ function demoBatch(uid: string, fromDirectory?: string): string {
 let tranN = 1;
 for (const uid of ids) {
   const p = (await directory.lookup(uid))!;
-  const route = uid === '232-35-797' ? routeRows.find((r) => r.code === 'R-01')! : pick(weighted);
+  const route = uid === '232-35-797' ? khalilRoute : pick(weighted);
   const category = uid === '232-35-797' ? 'student_tri_semester' : p.category === 'hall_resident' && route.kind !== 'shuttle' ? 'student_tri_semester' : p.category;
   const [u] = await db.insert(users).values({ universityId: uid, name: p.name, role: 'student', category, homeRouteId: route.id }).returning({ id: users.id });
   await db.insert(userProfiles).values({ userId: u!.id, department: deptOf.get(uid) === 'CSE' ? 'Computer Science and Engineering' : 'Software Engineering', batch: demoBatch(uid, p.batch), section: uid === '232-35-797' ? 'G' : p.section, phone: p.phone, email: p.email });
@@ -94,7 +105,7 @@ for (const uid of ids) {
 for (let i = 0; i < 40; i++) {
   const initial = TEACHERS[i % TEACHERS.length]!;
   const uid = `7104${String(10 + i).padStart(2, '0')}`;
-  const route = pick(regular.filter((r) => r.code !== 'R-05'));
+  const route = pick(staffRoutes.length ? staffRoutes : regular);
   const [u] = await db.insert(users).values({ universityId: uid, name: `Faculty ${initial}`, role: 'faculty', category: 'faculty', homeRouteId: route.id }).returning({ id: users.id });
   await db.insert(userProfiles).values({ userId: u!.id, department: 'Software Engineering', teacherInitial: initial, designation: 'Lecturer' });
   await db.insert(transportCards).values({ userId: u!.id, semesterId: sem.id, routeId: route.id, status: 'active', source: 'payment', issuedAt: new Date(), expiresOn: sem.endsOn, qrSecretEnc: encrypt(key, randomToken(32)) });
@@ -110,21 +121,21 @@ for (const [uid, note] of [['232-35-812', 'Sports quota, letter from the Proctor
 }
 const passUser = (await directory.lookup('233-15-020'))!;
 const [pu] = await db.insert(users).values({ universityId: '233-15-020', name: passUser.name, role: 'student', category: 'student_tri_semester', homeRouteId: regular[1]!.id }).returning({ id: users.id });
-let next = addDays(today, 1);
-while (weekdayOf(next) === 5) next = addDays(next, 1);
+const next = addDays(today, 1);
 await db.insert(dayPasses).values([
   { userId: pu!.id, semesterId: sem.id, routeId: regular[1]!.id, travelDate: addDays(today, -7), status: 'used', autoApproved: true },
   { userId: pu!.id, semesterId: sem.id, routeId: regular[1]!.id, travelDate: next, status: 'pending', autoApproved: false },
 ]);
 
 const any = await db.select({ id: users.id }).from(users).where(eq(users.role, 'student')).limit(3);
+// Numbers come from the ticket sequences, so riders' new tickets never collide with these.
 await db.insert(tickets).values([
-  { number: 'C-1001', kind: 'complaint', category: 'overcrowding', userId: any[0]!.id, routeId: regular[1]!.id, body: 'The 2:30 PM Uttara bus left about 20 people at DSC.' },
-  { number: 'C-1002', kind: 'suggestion', category: 'other', userId: any[1]!.id, routeId: regular[2]!.id, body: 'Please add a 9:15 AM bus from Dhanmondi for 10:30 classes.' },
-  { number: 'H-1001', kind: 'help', subject: 'Card not showing', userId: any[2]!.id, body: 'I paid this morning but My Card still says pending.' },
+  { number: await nextTicketNumber(db, 'complaint'), kind: 'complaint', category: 'overcrowding', userId: any[0]!.id, routeId: regular[1]!.id, body: 'The 2:30 PM Uttara bus left about 20 people at DSC.' },
+  { number: await nextTicketNumber(db, 'suggestion'), kind: 'suggestion', category: 'other', userId: any[1]!.id, routeId: regular[2]!.id, body: 'Please add a 9:15 AM bus from Dhanmondi for 10:30 classes.' },
+  { number: await nextTicketNumber(db, 'help'), kind: 'help', subject: 'Card not showing', userId: any[2]!.id, body: 'I paid this morning but My Card still says pending.' },
 ]);
 await db.insert(notices).values([
-  { title: 'No bus service on Friday', body: 'Weekly holiday. Regular service resumes Saturday 7:00 AM.', audience: 'all' },
+  { title: 'Friday bus schedule', body: 'On Fridays buses leave for DSC at 7:30 AM and return at 11:30 AM and 4:30 PM (Savar route 11:50 AM and 4:50 PM).', audience: 'all' },
   { title: `${sem.name} transport card renewal is open`, body: 'Renew from the app to keep riding next semester.', audience: 'all' },
 ]);
 

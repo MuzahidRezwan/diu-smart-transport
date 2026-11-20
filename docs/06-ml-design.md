@@ -40,12 +40,14 @@ Features (`app/features.py`): expected_max, weekday, departure time, direction, 
 
 ## 6.5 Evaluation (synthetic back-test, last 24 service days held out)
 
+The synthetic data follows DIU's pattern: Saturday–Thursday trips plus a lighter Friday service (one trip in, two out; fewer sections have Friday classes).
+
 | Metric | Baseline | Model |
 |---|---|---|
-| WAPE (riders) | 12.6% | **9.0%** |
-| MAE (riders per trip) | 7.2 | **5.1** |
-| P90 coverage (seats were enough) | 92.3% | 90.5% |
-| Empty seats in the plan | 16.1% | **10.9%** |
+| WAPE (riders) | 10.4% | **6.0%** |
+| MAE (riders per trip) | 7.6 | **4.4** |
+| P90 coverage (seats were enough) | 86.6% | 86.3% |
+| Empty seats in the plan | 11.3% | **7.5%** |
 
 Metric definitions (`app/model.py:evaluate`):
 * **WAPE** = Σ|actual − predicted| / Σ actual. Headline accuracy number.
