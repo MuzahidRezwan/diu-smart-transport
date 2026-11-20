@@ -21,7 +21,6 @@ export function dayLabel(iso: string, long = false): string {
     : { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
-export const isFriday = (iso: string) => new Date(`${iso}T00:00:00Z`).getUTCDay() === 5;
 
 export function dateTime(value: string | Date | null | undefined): string {
   if (!value) return '—';

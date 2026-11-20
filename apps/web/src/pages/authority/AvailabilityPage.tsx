@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { addDays, dayLabel, isFriday, todayDhaka } from '../../lib/format';
+import { addDays, dayLabel, todayDhaka } from '../../lib/format';
 import type { Allocation, AvailabilityDay } from '../../lib/types';
 import { BusChip, Card, Loading, Pill } from '../../components/ui';
 
@@ -16,7 +16,7 @@ export function AvailabilityPage() {
         <div className="overflow-x-auto"><table className="data">
           <thead><tr><th>Date</th><th>Total</th><th>Out of service</th><th>Available</th></tr></thead>
           <tbody>{(avail.data ?? []).map((d) => (
-            <tr key={d.date}><td><b>{dayLabel(d.date)}</b> {isFriday(d.date) && <Pill tone="none">Weekly holiday</Pill>}</td><td className="num">{d.total}</td>
+            <tr key={d.date}><td><b>{dayLabel(d.date)}</b></td><td className="num">{d.total}</td>
               <td><div className="flex flex-wrap gap-1.5">{d.unavailable.length ? d.unavailable.map((u) => <span key={u.code} className="flex items-center gap-1"><BusChip code={u.code} /><span className="muted text-xs">{u.reason}</span></span>) : <span className="muted">None</span>}</div></td>
               <td className="num"><b>{d.available}</b></td></tr>
           ))}</tbody>

@@ -1,9 +1,10 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatClock, formatMix } from '@diu/shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { addDays, dayLabel, isFriday, nf, routeLabel, todayDhaka } from '../../lib/format';
+import { addDays, dayLabel, nf, routeLabel, todayDhaka } from '../../lib/format';
+import { useTripDays } from '../../lib/tripDays';
 import { coverage, peakRequirement, waves } from '../../lib/demand';
 import type { Allocation, AvailabilityDay, BusRow, PredictionRow } from '../../lib/types';
 import { AllocationDrawer } from '../../components/AllocationDrawer';
@@ -17,9 +18,14 @@ export function DashboardPage() {
   const qc = useQueryClient();
   const toast = useToast();
   const today = todayDhaka();
-  // On the weekly holiday there is nothing to plan today, so open on the next service day.
-  const firstServiceDay = isFriday(today) ? addDays(today, 1) : today;
-  const [date, setDate] = useState(firstServiceDay);
+  // When nothing runs today (a holiday, or after a timetable change), open on the next day with trips.
+  const tripDays = useTripDays(today, 8);
+  const firstServiceDay = tripDays.firstWithTrips;
+  const [date, setDateState] = useState(today);
+  const [moved, setMoved] = useState(false);
+  const setDate = (d: string) => { setMoved(true); setDateState(d); };
+  useEffect(() => { if (!moved) setDateState(firstServiceDay); }, [firstServiceDay, moved]);
+  const day = tripDays.byDate.get(date);
   const [aud, setAud] = useState<'student' | 'faculty'>('student');
   const [dir, setDir] = useState<'to_campus' | 'from_campus'>('to_campus');
   const [drawer, setDrawer] = useState<PredictionRow | null>(null);
@@ -61,6 +67,7 @@ export function DashboardPage() {
     };
     return (
       <Card title={title} actions={<Pill tone="info">{dayLabel(date)}</Pill>}>
+        {audience === 'faculty' && <p className="muted mb-2 text-xs">Staff-only trips, such as the 4:20 PM employee bus. Staff on regular trips are counted with the students.</p>}
         <div className="mb-3.5 grid gap-3 sm:grid-cols-2">
           {(['to_campus', 'from_campus'] as const).map((d) => (
             <div key={d} className="tile">
@@ -99,12 +106,13 @@ export function DashboardPage() {
           {can('predictions.run') && <button className="btn" disabled={refresh.isPending} onClick={() => refresh.mutate()}>{refresh.isPending ? 'Running…' : 'Re-run forecast'}</button>}
           <button className="btn btn-primary" onClick={() => setWeek(true)}>See next 7 days prediction</button>
         </div>
-        {isFriday(today) && date === firstServiceDay && <p className="muted">Today is the weekly holiday, so the next service day is shown.</p>}
+        {firstServiceDay !== today && date === firstServiceDay && <p className="muted">No trips run today, so the next day with trips is shown.</p>}
         {refresh.error ? <ErrorNote error={refresh.error} /> : null}
-        {isFriday(date) ? <Card><p className="muted">Weekly holiday. No trips are scheduled.</p></Card>
+        {day?.closed ? <Card><p className="muted">No service: {day.closed}.</p></Card>
+          : day && day.trips === 0 ? <Card><p className="muted">No trips are scheduled on this day.</p></Card>
           : preds.isLoading ? <Loading what="Loading prediction" />
           : !rows.length ? <Card><p className="muted">No prediction for this date yet. {can('predictions.run') ? 'Press "Re-run forecast".' : 'Ask an allocation officer to run it.'}</p></Card>
-          : <div className="grid gap-4 xl:grid-cols-2">{block('student', 'Students')}{block('faculty', 'Faculty / Admin')}</div>}
+          : <div className="grid gap-4 xl:grid-cols-2">{block('student', 'Students (regular trips)')}{block('faculty', 'Faculty / Admin')}</div>}
       </section>
 
       {rows.length > 0 && (
@@ -132,7 +140,7 @@ export function DashboardPage() {
                   return (<Fragment key={r.timeSlotId}>{header}
                     <tr>
                       <td><b>{r.routeKind === 'shuttle' ? 'Shuttle' : r.routeCode}</b><div className="muted text-xs">{r.audience === 'faculty' ? 'Faculty' : 'Student'}</div></td>
-                      <td>{routeLabel(r.direction, r.routeName)}<div className="muted text-xs">Departs {formatClock(r.departureMinutes)}</div></td>
+                      <td>{routeLabel(r.direction, r.routeName)}<div className="muted text-xs">Departs {formatClock(r.departureMinutes)}{r.note ? ` · ${r.note}` : ''}</div></td>
                       <td className="num"><b>{r.predicted}</b> <span className="muted text-xs">/ P90 {r.p90}</span><div className="muted text-xs">Routine max {r.expectedMax}</div></td>
                       <td><div className="flex flex-wrap gap-1">{a?.buses.length ? a.buses.map((b) => <BusChip key={b.id} code={b.code} />) : <span className="muted text-xs">None</span>}</div></td>
                       <td><Pill tone={c.tone}>{c.text}</Pill></td>
@@ -157,6 +165,7 @@ export function DashboardPage() {
 function WeekModal({ from, onClose, onPick }: { from: string; onClose(): void; onPick(date: string): void }) {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(from, i));
   const preds = useQuery({ queryKey: ['predictions-week', from], queryFn: () => api<{ rows: PredictionRow[] }>('/admin/predictions', { query: { from, days: 7 } }) });
+  const tripDays = useTripDays(from, 7);
   const allocs = useQueries({ queries: dates.map((d) => ({ queryKey: ['allocations', d], queryFn: () => api<Allocation[]>('/admin/allocations', { query: { date: d } }) })) });
   return (
     <Modal title="Next 7 days prediction" onClose={onClose}>
@@ -168,7 +177,9 @@ function WeekModal({ from, onClose, onPick }: { from: string; onClose(): void; o
             <tbody>
               {dates.map((d, i) => {
                 const rs = (preds.data?.rows ?? []).filter((r) => r.serviceDate === d);
-                if (isFriday(d)) return <tr key={d}><td><b>{dayLabel(d)}</b></td><td colSpan={6}><Pill tone="none">Weekly holiday · no trips</Pill></td></tr>;
+                const info = tripDays.byDate.get(d);
+                if (info?.closed) return <tr key={d}><td><b>{dayLabel(d)}</b></td><td colSpan={6}><Pill tone="none">No service · {info.closed}</Pill></td></tr>;
+                if (info && info.trips === 0) return <tr key={d}><td><b>{dayLabel(d)}</b></td><td colSpan={6}><Pill tone="none">No trips scheduled</Pill></td></tr>;
                 const s = (a: string, dir: string) => rs.filter((r) => r.audience === a && r.direction === dir).reduce((t, r) => t + r.predicted, 0);
                 const done = (allocs[i]?.data ?? []).filter((a) => a.buses.length).length;
                 return (

@@ -59,8 +59,7 @@ export default function CardScreen() {
   });
   const pass = useMutation({
     mutationFn: () => {
-      let d = new Date(Date.now() + 6 * 3600_000);
-      if (d.getUTCDay() === 5) d = new Date(d.getTime() + 86_400_000);
+      const d = new Date(Date.now() + 6 * 3600_000); // today in Asia/Dhaka
       return api<{ status: string }>('/me/day-passes', { body: { travelDate: d.toISOString().slice(0, 10), routeId: chosen } });
     },
     onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['my-card'] }); reload(); Alert.alert('One Day Pass', r.status === 'approved' ? 'Approved. Your QR is ready.' : 'Sent for approval.'); },

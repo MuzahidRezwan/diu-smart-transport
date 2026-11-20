@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import { USER_CATEGORY_LABELS, type UserCategory } from '@diu/shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { addDays, dayLabel, isFriday, todayDhaka } from '../../lib/format';
+import { dayLabel, todayDhaka } from '../../lib/format';
 import { qrToken, secondsLeft } from '../../lib/qr';
 import type { RouteInfo } from '../../lib/types';
 import { ErrorNote, Loading, Pill, useToast } from '../../components/ui';
@@ -45,7 +45,7 @@ export function CardPage() {
   const routes = useQuery({ queryKey: ['routes'], queryFn: () => api<RouteInfo[]>('/routes') });
   const [routeId, setRouteId] = useState('');
   const [note, setNote] = useState('');
-  const [passDate, setPassDate] = useState(() => { let d = todayDhaka(); while (isFriday(d)) d = addDays(d, 1); return d; });
+  const [passDate, setPassDate] = useState(todayDhaka);
   const chosen = routeId || me?.homeRouteId || routes.data?.[0]?.id || '';
 
   const pay = useMutation({

@@ -12,6 +12,8 @@ export interface PredictionRow {
   routeKind: 'regular' | 'shuttle';
   direction: 'to_campus' | 'from_campus';
   audience: 'student' | 'faculty';
+  /** e.g. "Goes up to Polashbari U-turn only" */
+  note?: string | null;
   departureMinutes: number;
   departure: string;
 }
@@ -94,4 +96,5 @@ export interface RoutineVersion { id: string; department: string; fileName: stri
 export interface ScheduleSlot {
   timeSlotId: string; routeId: string; routeCode: string; routeName: string; routeKind: string; direction: 'to_campus' | 'from_campus';
   audience: 'student' | 'faculty'; departure: string; departureMinutes: number; published?: boolean; buses?: BusLite[];
+  note?: string | null;
 }
