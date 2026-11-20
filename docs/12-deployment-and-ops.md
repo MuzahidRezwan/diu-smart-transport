@@ -210,7 +210,7 @@ Dependabot proposes weekly updates for the API/web workspace, the ML service and
 
 ## 12.13 Public demo
 
-A separate, throw-away deployment for showing the system: one container ([`deploy/demo/Dockerfile`](../deploy/demo/Dockerfile)) with the web app and API on one origin (API under `/api`), the ML service with a model trained on synthetic data, and embedded PGlite. On every start it loads fresh sample data, runs the forecast and publishes suggested buses for the next four service days. `DEMO_MODE` turns off 2FA for the shared transport-office account and password changes, and the API refuses `DEMO_MODE` in production. **Never put real data in it.**
+A separate, throw-away deployment for showing the system: one container ([`deploy/demo/Dockerfile`](../deploy/demo/Dockerfile)) with the web app and API on one origin (API under `/api`), the ML service with a model trained on synthetic data, and embedded PGlite. On every start it loads fresh sample data, runs the forecast, publishes suggested buses for the next four service days and starts simulated GPS trackers ([`deploy/demo/gps-sim.mjs`](../deploy/demo/gps-sim.mjs)). The simulator gets a tracker key for each allocated bus through the normal fleet endpoint and sends signed positions to `/devices/gps` every 5 seconds: buses on a published trip drive their route in real time, and a route with no trip at that moment replays its next published trip at 3× speed so the map is never empty. `DEMO_MODE` turns off 2FA for the shared transport-office account and password changes, and the API refuses `DEMO_MODE` in production. **Never put real data in it.**
 
 **Hugging Face Space (free, permanent link).** One-time setup:
 

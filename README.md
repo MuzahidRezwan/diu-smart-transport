@@ -19,7 +19,7 @@ The whole system (dashboard, student/faculty app, ML model) with sample data, on
 - **GitHub Codespaces** (no extra account): [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MuzahidRezwan/diu-smart-transport?quickstart=1). The demo opens on port 7860 after the first build (about 5 minutes).
 - **Docker:** `docker build -f deploy/demo/Dockerfile -t diu-demo . && docker run -p 7860:7860 diu-demo`, then http://localhost:7860.
 
-Sign in as the transport office with *Fill in* on the login page (`710215` / `diu-demo-2026`, no 2FA in the demo), or as a rider with `232-35-797` (student) or `710410` (faculty) on the stand-in university page. Sign-in and payments are simulated, and the data resets when the demo restarts.
+Sign in as the transport office with *Fill in* on the login page (`710215` / `diu-demo-2026`, no 2FA in the demo), or as a rider with `232-35-797` (student) or `710410` (faculty) on the stand-in university page. Sign-in and payments are simulated, and the data resets when the demo restarts. Simulated GPS trackers ([`deploy/demo/gps-sim.mjs`](deploy/demo/gps-sim.mjs)) drive the allocated buses along their routes, so the live map moves; a route with no trip running at that moment replays its next trip at 3× speed.
 
 ## What it does
 

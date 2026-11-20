@@ -39,5 +39,7 @@ cd /app
 node deploy/demo/wait-for.mjs "http://127.0.0.1:${PORT}/api/health" 60
 # Publish suggested buses for the next few service days, so the student app shows bus numbers at once.
 node deploy/demo/warmup.mjs "http://127.0.0.1:${PORT}/api" || echo "warm-up skipped"
+# Simulated GPS trackers, so the live map moves.
+node deploy/demo/gps-sim.mjs "http://127.0.0.1:${PORT}/api" &
 echo "Ready: ${PUBLIC_URL}  (transport office 710215 / ${DEMO_ADMIN_PASSWORD})"
 wait "$API_PID"

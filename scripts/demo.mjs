@@ -179,6 +179,13 @@ if (mlReady) {
   say('Publishing suggested buses for the next service days…');
   spawnSync(process.execPath, [join(ROOT, 'deploy', 'demo', 'warmup.mjs'), `http://127.0.0.1:${PORT}/api`], { env, stdio: 'ignore' });
 }
+// Pretend GPS trackers, so the live map moves. Optional: the demo keeps running without it.
+say('Starting simulated GPS trackers on the buses…');
+{
+  const sim = spawn(process.execPath, [join(ROOT, 'deploy', 'demo', 'gps-sim.mjs'), `http://127.0.0.1:${PORT}/api`], { env, stdio: ['ignore', 'inherit', 'inherit'] });
+  sim.on('exit', (code) => { if (!stopping && code) console.warn(`\x1b[33m! Simulated GPS stopped (exit ${code}); the live map will be empty.\x1b[0m`); });
+  children.push(sim);
+}
 
 console.log(`
 \x1b[32m✔ DIU Smart Transport is running\x1b[0m
@@ -186,6 +193,7 @@ console.log(`
   Open:              \x1b[1mhttp://localhost:${PORT}\x1b[0m${PUBLIC ? `\n  Public link:       \x1b[1m${PUBLIC_URL}\x1b[0m   (works while this window stays open)` : ''}
   Transport office:  710215 / ${env.DEMO_ADMIN_PASSWORD}   (no 2FA in the demo)
   Student / faculty: Sign in with DIU account → 232-35-797 or 710410
+  Live route map:    simulated GPS; routes with no trip right now replay their next trip at 3x
 
   Sample data only, recreated on every start. Press Ctrl+C to stop.
 `);
