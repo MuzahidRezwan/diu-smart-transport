@@ -57,7 +57,7 @@ Request bodies are validated with the zod schemas in [`packages/shared/src/schem
 | Method | Path | Description |
 |---|---|---|
 | GET | `/routes` | Active routes with stops and coordinates (cached 5 min) |
-| GET | `/schedule?date=&routeId=&audience=` | Departure times for a day. **Times only; bus numbers are never public.** (cached 1 min) |
+| GET | `/schedule?date=&routeId=&audience=` | Departure times for a day, each with `audience` and the timetable `note`. **Times only; bus numbers are never public.** (cached 1 min) |
 
 ## 5.5 Rider (`/me`)
 
@@ -72,8 +72,8 @@ Signed-in students, faculty and staff. Every query is scoped to the caller (`WHE
 | POST | `/me/card/free-request` | `{ routeId, note }`. Asks the office for free access; goes to the card requests queue. |
 | GET | `/me/payments` | Own payment history |
 | GET, POST | `/me/day-passes` | List / request `{ travelDate, routeId }`. Auto-approved up to the semester limit; then rejected or queued for manual approval (setting). |
-| GET | `/me/schedule?date=&routeId=&audience=` | Day schedule. Card holders also see the **published** bus numbers for their route; faculty can view the student schedule too. |
-| GET | `/me/my-bus?direction=&audience=` | The next relevant departure for the rider's route, with published buses |
+| GET | `/me/schedule?date=&routeId=&audience=` | Day schedule. Card holders also see the **published** bus numbers for their route. The staff schedule lists the regular trips and staff-only trips; faculty can view the student schedule too. |
+| GET | `/me/my-bus?direction=&audience=` | The next relevant departure for the rider's route, with published buses. If nothing is left today, the first trip on the next day that has one (`isToday: false`). |
 | GET | `/me/live` | Last known positions of buses currently on the rider's route (card holders only) |
 | GET | `/me/notices` | Notices for everyone, the rider's audience and their route |
 | POST | `/me/tickets` | Complaint/suggestion `{ kind, category, body, routeId?, busCode?, hideIdentityFromDriver }` or help `{ kind: "help", subject, body }` → `{ id, number, status }` |

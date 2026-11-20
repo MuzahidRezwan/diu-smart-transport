@@ -125,7 +125,8 @@ export function meRouter(ctx: AppContext): Router {
     const routeId = q.routeId ?? user!.homeRouteId ?? undefined;
     const aud = q.audience ?? (me.role === 'student' ? 'student' : 'faculty');
     if (aud === 'faculty' && me.role === 'student') throw notFound('Schedule');
-    const day = await slotsForDay(db, q.date, { routeId, audience: aud });
+    // The staff schedule lists the regular trips too (staff ride them), plus staff-only trips.
+    const day = await slotsForDay(db, q.date, { routeId, ...(aud === 'student' ? { audience: 'student' as const } : {}) });
     const [card] = await db.select({ id: transportCards.id }).from(transportCards).innerJoin(semesters, eq(semesters.id, transportCards.semesterId))
       .where(and(eq(transportCards.userId, me.userId), eq(semesters.isCurrent, true), eq(transportCards.status, 'active')));
     const [pass] = await db.select({ id: dayPasses.id }).from(dayPasses)
@@ -151,11 +152,13 @@ export function meRouter(ctx: AppContext): Router {
     const direction = q.direction ?? (now < 12 * 60 ? 'to_campus' : 'from_campus');
     const aud = q.audience ?? (me.role === 'student' ? 'student' : 'faculty');
     const todayIso = today();
-    const filter = { routeId: user!.homeRouteId, audience: aud } as const;
+    // Students take the regular trips. Staff take those too, plus staff-only trips
+    // (DIU's 4:20 PM "only for employees" buses), so for them both kinds count.
+    const filter = { routeId: user!.homeRouteId, ...(aud === 'student' ? { audience: 'student' as const } : {}) };
     const day = await slotsForDay(db, todayIso, filter);
     let next = day.slots.find((s) => s.direction === direction && s.departureMinutes >= now - 5) ?? null;
     let serviceDate = todayIso;
-    // Nothing left today (evening, Friday, holiday): the first trip this way on the next service day.
+    // Nothing left today (evening, a day without trips, a holiday): the first trip this way on a later day.
     for (let i = 1; !next && i <= 7; i++) {
       const date = addDays(todayIso, i);
       const later = (await slotsForDay(db, date, filter)).slots.filter((s) => s.direction === direction)
