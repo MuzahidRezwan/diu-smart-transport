@@ -18,7 +18,8 @@ export function PreviewPage() {
   const [dir, setDir] = useState<'to_campus' | 'from_campus'>(dhakaMinutes() < 720 ? 'to_campus' : 'from_campus');
   const routes = useQuery({ queryKey: ['routes'], queryFn: () => api<RouteInfo[]>('/routes') });
   const route = routes.data?.find((r) => r.id === routeId) ?? routes.data?.[0];
-  const schedule = useQuery({ queryKey: ['schedule-public', today, route?.id, audience], queryFn: () => api<{ slots: ScheduleSlot[]; closed: string | null }>('/schedule', { query: { date: today, routeId: route!.id, audience } }), enabled: Boolean(route) });
+  // Same as the rider's My Bus: staff ride the regular trips as well as staff-only ones.
+  const schedule = useQuery({ queryKey: ['schedule-public', today, route?.id, audience], queryFn: () => api<{ slots: ScheduleSlot[]; closed: string | null }>('/schedule', { query: { date: today, routeId: route!.id, ...(audience === 'student' ? { audience } : {}) } }), enabled: Boolean(route) });
   const allocs = useQuery({ queryKey: ['allocations', today], queryFn: () => api<Allocation[]>('/admin/allocations', { query: { date: today } }) });
   if (!route) return <Loading />;
   const now = dhakaMinutes();
@@ -35,7 +36,7 @@ export function PreviewPage() {
         <RiderHome readOnly onDirection={setDir} data={{
           name: 'Sample', universityId: '000-00-000', routeName: route.name, stops: [...route.stops.map((s) => s.name)], hasCard: true, direction: dir,
           closed: schedule.data?.closed, buses: published?.buses ?? [],
-          next: next ? { departureMinutes: next.departureMinutes, minutesUntil: next.departureMinutes - now, label: routeLabel(next.direction, route.name) } : null,
+          next: next ? { departureMinutes: next.departureMinutes, minutesUntil: next.departureMinutes - now, label: routeLabel(next.direction, route.name), note: next.note } : null,
         }} />
       </div>
     </Card>

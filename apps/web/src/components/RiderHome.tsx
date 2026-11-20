@@ -9,8 +9,8 @@ export interface RiderHomeData {
   stops: string[];
   hasCard: boolean;
   direction: 'to_campus' | 'from_campus';
-  /** dayLabel is set when the next bus is not today (evening, Friday, holiday). */
-  next: { departureMinutes: number; minutesUntil: number; label: string; dayLabel?: string | null } | null;
+  /** dayLabel is set when the next bus is not today (evening, a holiday, a day without trips). */
+  next: { departureMinutes: number; minutesUntil: number; label: string; dayLabel?: string | null; note?: string | null } | null;
   buses: BusLite[];
   closed?: string | null;
 }
@@ -31,6 +31,7 @@ export function RiderHome({ data, onDirection, readOnly }: { data: RiderHomeData
           <div className="flex text-xs font-extrabold"><span className="flex-1 opacity-85">{data.next.dayLabel ? 'NEXT BUS' : 'YOUR BUS'}</span><span>{data.next.dayLabel ?? (data.next.minutesUntil > 0 ? `in ${data.next.minutesUntil} min` : 'boarding now')}</span></div>
           <div className="num text-4xl font-bold">{formatClock(data.next.departureMinutes)}</div>
           <div className="font-bold">{data.next.label}</div>
+          {data.next.note && <div className="text-xs opacity-85">{data.next.note}</div>}
           {data.hasCard ? (data.buses.length ? (
             <div className="grid gap-1.5 rounded-xl p-2.5" style={{ background: 'color-mix(in srgb, var(--accent-ink) 12%, transparent)' }}>
               {['H', 'M', 'S'].map((op) => {

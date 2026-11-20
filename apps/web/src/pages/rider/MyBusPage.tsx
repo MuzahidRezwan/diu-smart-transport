@@ -38,7 +38,7 @@ export function MyBusPage() {
       )}
       <RiderHome onDirection={setDir} data={{
         name: me.name, universityId: me.universityId, routeName: route?.name ?? null, stops: route?.stops.map((s) => s.name) ?? [], hasCard: d.canSeeBuses, direction: d.direction, closed: d.closed, buses: d.buses,
-        next: d.next && route ? { departureMinutes: d.next.departureMinutes, minutesUntil: d.minutesUntil ?? 0, label: routeLabel(d.next.direction, route.name), dayLabel: d.isToday ? null : dayLabel(d.serviceDate) } : null,
+        next: d.next && route ? { departureMinutes: d.next.departureMinutes, minutesUntil: d.minutesUntil ?? 0, label: routeLabel(d.next.direction, route.name), dayLabel: d.isToday ? null : dayLabel(d.serviceDate), note: d.next.note } : null,
       }} />
       <Link className="btn justify-center" to="/app/schedule">See today's bus schedule</Link>
       {d.canSeeBuses && <div className="card"><b>Live route</b><div className="mt-2"><LiveMap positionsPath="/me/live" routeFilter={me.homeRouteId} /></div></div>}

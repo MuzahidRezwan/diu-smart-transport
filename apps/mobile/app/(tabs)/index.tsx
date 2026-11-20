@@ -7,7 +7,7 @@ import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { BusChip, Button, Card, OP_NAMES, Segmented, T, s, useTheme } from '../../src/components/ui';
 
-interface Slot { timeSlotId: string; routeName: string; direction: 'to_campus' | 'from_campus'; departureMinutes: number }
+interface Slot { timeSlotId: string; routeName: string; direction: 'to_campus' | 'from_campus'; departureMinutes: number; note?: string | null }
 /** "Sat 21 Nov" for a YYYY-MM-DD service date. */
 const dayName = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
@@ -51,6 +51,7 @@ export default function MyBusScreen() {
             <View style={s.row}><T bold size={12} color={t.accentInk}>{d.isToday ? 'YOUR BUS' : 'NEXT BUS'}</T><View style={{ flex: 1 }} /><T bold size={12} color={t.accentInk}>{!d.isToday ? dayName(d.serviceDate) : (d.minutesUntil ?? 0) > 0 ? `in ${d.minutesUntil} min` : 'boarding now'}</T></View>
             <T bold size={40} color={t.accentInk}>{formatClock(d.next.departureMinutes)}</T>
             <T bold color={t.accentInk}>{d.next.direction === 'to_campus' ? `${d.next.routeName} → DSC` : `DSC → ${d.next.routeName}`}</T>
+            {d.next.note ? <T size={12} color={t.accentInk}>{d.next.note}</T> : null}
             {d.canSeeBuses && (d.buses.length ? ['H', 'M', 'S'].map((op) => {
               const list = d.buses.filter((b) => b.operatorCode === op);
               return list.length ? <View key={op} style={s.row}><T bold size={12} color={t.accentInk} style={{ minWidth: 76 }}>{OP_NAMES[op]}</T>{list.map((b) => <View key={b.code} style={{ backgroundColor: '#fff', borderRadius: 8 }}><BusChip code={b.code} /></View>)}</View> : null;
