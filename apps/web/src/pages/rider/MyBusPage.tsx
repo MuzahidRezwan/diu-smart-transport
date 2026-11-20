@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { routeLabel } from '../../lib/format';
+import { dayLabel, routeLabel } from '../../lib/format';
 import type { BusLite, RouteInfo, ScheduleSlot } from '../../lib/types';
 import { RiderHome } from '../../components/RiderHome';
 import { ErrorNote, Loading, Segmented } from '../../components/ui';
 import { LiveMap } from '../../components/LiveMap';
 
-interface MyBus { closed: string | null; direction: 'to_campus' | 'from_campus'; next: ScheduleSlot | null; minutesUntil: number | null; buses: BusLite[]; canSeeBuses: boolean; reason?: string }
+interface MyBus { closed: string | null; direction: 'to_campus' | 'from_campus'; next: ScheduleSlot | null; serviceDate: string; isToday: boolean; minutesUntil: number | null; buses: BusLite[]; canSeeBuses: boolean; reason?: string }
 
 export function MyBusPage() {
   const { me } = useAuth();
@@ -38,7 +38,7 @@ export function MyBusPage() {
       )}
       <RiderHome onDirection={setDir} data={{
         name: me.name, universityId: me.universityId, routeName: route?.name ?? null, stops: route?.stops.map((s) => s.name) ?? [], hasCard: d.canSeeBuses, direction: d.direction, closed: d.closed, buses: d.buses,
-        next: d.next && route ? { departureMinutes: d.next.departureMinutes, minutesUntil: d.minutesUntil ?? 0, label: routeLabel(d.next.direction, route.name) } : null,
+        next: d.next && route ? { departureMinutes: d.next.departureMinutes, minutesUntil: d.minutesUntil ?? 0, label: routeLabel(d.next.direction, route.name), dayLabel: d.isToday ? null : dayLabel(d.serviceDate) } : null,
       }} />
       <Link className="btn justify-center" to="/app/schedule">See today's bus schedule</Link>
       {d.canSeeBuses && <div className="card"><b>Live route</b><div className="mt-2"><LiveMap positionsPath="/me/live" routeFilter={me.homeRouteId} /></div></div>}

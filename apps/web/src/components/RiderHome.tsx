@@ -9,7 +9,8 @@ export interface RiderHomeData {
   stops: string[];
   hasCard: boolean;
   direction: 'to_campus' | 'from_campus';
-  next: { departureMinutes: number; minutesUntil: number; label: string } | null;
+  /** dayLabel is set when the next bus is not today (evening, Friday, holiday). */
+  next: { departureMinutes: number; minutesUntil: number; label: string; dayLabel?: string | null } | null;
   buses: BusLite[];
   closed?: string | null;
 }
@@ -22,11 +23,12 @@ export function RiderHome({ data, onDirection, readOnly }: { data: RiderHomeData
   return (
     <div className="grid gap-3">
       <Segmented label="Direction" value={data.direction} onChange={(d) => onDirection?.(d)} options={[['to_campus', 'To campus'], ['from_campus', 'To home']]} />
-      {data.closed ? <div className="card"><b>No buses today: {data.closed}</b></div> : !data.next ? (
-        <div className="card"><b>No more buses today in this direction.</b></div>
+      {data.closed && <div className="card"><b>No buses today: {data.closed}</b></div>}
+      {!data.next ? (
+        <div className="card"><b>No buses in this direction in the next 7 days.</b></div>
       ) : (
         <div className="card grid gap-2.5 border-0" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
-          <div className="flex text-xs font-extrabold"><span className="flex-1 opacity-85">YOUR BUS</span><span>{data.next.minutesUntil > 0 ? `in ${data.next.minutesUntil} min` : 'boarding now'}</span></div>
+          <div className="flex text-xs font-extrabold"><span className="flex-1 opacity-85">{data.next.dayLabel ? 'NEXT BUS' : 'YOUR BUS'}</span><span>{data.next.dayLabel ?? (data.next.minutesUntil > 0 ? `in ${data.next.minutesUntil} min` : 'boarding now')}</span></div>
           <div className="num text-4xl font-bold">{formatClock(data.next.departureMinutes)}</div>
           <div className="font-bold">{data.next.label}</div>
           {data.hasCard ? (data.buses.length ? (

@@ -8,7 +8,10 @@ import { useAuth } from '../../src/lib/auth';
 import { BusChip, Button, Card, OP_NAMES, Segmented, T, s, useTheme } from '../../src/components/ui';
 
 interface Slot { timeSlotId: string; routeName: string; direction: 'to_campus' | 'from_campus'; departureMinutes: number }
-interface MyBus { closed: string | null; direction: 'to_campus' | 'from_campus'; next: Slot | null; minutesUntil: number | null; buses: { code: string; operatorCode: string }[]; canSeeBuses: boolean; reason?: string }
+/** "Sat 21 Nov" for a YYYY-MM-DD service date. */
+const dayName = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+interface MyBus { closed: string | null; direction: 'to_campus' | 'from_campus'; next: Slot | null; serviceDate: string; isToday: boolean; minutesUntil: number | null; buses: { code: string; operatorCode: string }[]; canSeeBuses: boolean; reason?: string }
 interface RouteInfo { id: string; name: string; stops: { name: string }[] }
 
 export default function MyBusScreen() {
@@ -42,11 +45,10 @@ export default function MyBusScreen() {
       )}
 
       {!me?.homeRouteId ? <Card><T bold>Choose your route on the My Card tab to get started.</T></Card>
-        : d?.closed ? <Card><T bold>No buses today: {d.closed}</T></Card>
-        : !d?.next ? <Card><T bold>{q.isLoading ? 'Loading…' : 'No more buses today in this direction.'}</T></Card>
+        : !d?.next ? <Card><T bold>{q.isLoading ? 'Loading…' : d?.closed ? `No buses today: ${d.closed}` : 'No buses in this direction in the next 7 days.'}</T></Card>
         : (
           <View style={{ backgroundColor: t.accent, borderRadius: 16, padding: 14, gap: 8 }}>
-            <View style={s.row}><T bold size={12} color={t.accentInk}>YOUR BUS</T><View style={{ flex: 1 }} /><T bold size={12} color={t.accentInk}>{(d.minutesUntil ?? 0) > 0 ? `in ${d.minutesUntil} min` : 'boarding now'}</T></View>
+            <View style={s.row}><T bold size={12} color={t.accentInk}>{d.isToday ? 'YOUR BUS' : 'NEXT BUS'}</T><View style={{ flex: 1 }} /><T bold size={12} color={t.accentInk}>{!d.isToday ? dayName(d.serviceDate) : (d.minutesUntil ?? 0) > 0 ? `in ${d.minutesUntil} min` : 'boarding now'}</T></View>
             <T bold size={40} color={t.accentInk}>{formatClock(d.next.departureMinutes)}</T>
             <T bold color={t.accentInk}>{d.next.direction === 'to_campus' ? `${d.next.routeName} → DSC` : `DSC → ${d.next.routeName}`}</T>
             {d.canSeeBuses && (d.buses.length ? ['H', 'M', 'S'].map((op) => {
