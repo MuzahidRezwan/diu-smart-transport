@@ -101,7 +101,7 @@ Role `supervisor` (a bus attendant account).
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/devices/gps` | Headers `x-device-id`, `x-timestamp` (Unix seconds), `x-signature = HMAC-SHA256(device key, "<timestamp>.<raw body>")` | `{ lat, lng, speedKmh?, heading?, recordedAt }`. Requests older than 60 s are rejected. Position is pushed live to the office and, only while the bus is on a trip, to that route's riders. |
+| POST | `/devices/gps` | Headers `x-device-id`, `x-timestamp` (Unix seconds), `x-signature = HMAC-SHA256(device key, "<timestamp>.<raw body>")` | `{ lat, lng, speedKmh?, heading?, recordedAt }`. Requests older than 60 s are rejected. Position is pushed live to the office and, only while the bus is on a trip, to that route's riders. Demo only: an `x-demo-trip: <time slot id>` header lets the GPS simulator replay a trip outside its time; it is ignored unless `DEMO_MODE` is on. |
 
 ## 5.9 Authority dashboard (`/admin`)
 

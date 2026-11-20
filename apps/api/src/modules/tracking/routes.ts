@@ -4,6 +4,7 @@
  * Only buses are tracked, never riders.
  */
 import { Router, type Request } from 'express';
+import { z } from 'zod';
 import { and, desc, eq, gte } from 'drizzle-orm';
 import { dhakaDate, dhakaMinutes, gpsPingSchema } from '@diu/shared';
 import type { AppContext } from '../../context.js';
@@ -40,6 +41,20 @@ export async function currentTrip(db: DB, busId: string, at = new Date()) {
   return rows.find((r) => r.start - 15 <= now && now <= r.end) ?? null;
 }
 
+/**
+ * Demo only: the trip a simulated bus is replaying. When no bus is on the road, the
+ * demo's GPS simulator (deploy/demo/gps-sim.mjs) replays upcoming trips and names
+ * the time slot in the x-demo-trip header. Ignored unless DEMO_MODE is on, which
+ * the API refuses in production.
+ */
+async function demoTrip(ctx: AppContext, req: Request) {
+  const slotId = ctx.config.DEMO_MODE ? req.get('x-demo-trip') : undefined;
+  if (!slotId || !z.string().uuid().safeParse(slotId).success) return null;
+  const [row] = await ctx.db.select({ routeId: routes.id, routeCode: routes.code, routeName: routes.name, direction: timeSlots.direction, departureMinutes: timeSlots.departureMinutes })
+    .from(timeSlots).innerJoin(routes, eq(routes.id, timeSlots.routeId)).where(eq(timeSlots.id, slotId));
+  return row ?? null;
+}
+
 async function verifyDevice(ctx: AppContext, req: Request) {
   const deviceId = req.get('x-device-id') ?? '';
   const ts = Number(req.get('x-timestamp') ?? 0);
@@ -63,7 +78,7 @@ export function trackingRouter(ctx: AppContext) {
     const recordedAt = new Date(body.recordedAt);
     if (recordedAt.getTime() > Date.now() + 120_000) throw new HttpError(400, 'bad_time', 'recordedAt is in the future');
     await ctx.db.insert(gpsPings).values({ busId: bus.id, lat: body.lat, lng: body.lng, speedKmh: body.speedKmh ?? null, heading: body.heading ?? null, recordedAt });
-    const trip = await currentTrip(ctx.db, bus.id, recordedAt);
+    const trip = (await demoTrip(ctx, req)) ?? await currentTrip(ctx.db, bus.id, recordedAt);
     const pos: LivePosition = {
       busId: bus.id, code: bus.code, operatorCode: bus.operatorCode, lat: body.lat, lng: body.lng, speedKmh: body.speedKmh ?? null, heading: body.heading ?? null,
       recordedAt: recordedAt.toISOString(),
