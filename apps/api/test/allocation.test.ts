@@ -96,6 +96,7 @@ describe('bus allocation', () => {
   });
 
   it('refuses dates when the slot does not run', async () => {
+    // The sample timetable runs Saturday to Thursday.
     let friday = new Date(Date.now() + 6 * 3600_000);
     while (friday.getUTCDay() !== 5) friday = new Date(friday.getTime() + 86_400_000);
     await request(env.app).put('/admin/allocations').set(bearer(admin))

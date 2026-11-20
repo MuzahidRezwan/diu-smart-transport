@@ -69,7 +69,11 @@ async function testDatabase(): Promise<Database> {
   };
 }
 
-export async function setup(overrides: Partial<AppContext> = {}): Promise<TestEnv> {
+/**
+ * A fresh app and database. Tests use the small 'sample' timetable (Saturday–Thursday
+ * only, predictable codes like R-01 and SH-1) unless they ask for the real 'diu' one.
+ */
+export async function setup(overrides: Partial<AppContext> = {}, opts: { timetable?: 'diu' | 'sample' } = {}): Promise<TestEnv> {
   const config = loadConfig({ NODE_ENV: 'test', PUBLIC_API_URL: 'http://api.test', WEB_APP_URL: 'http://web.test' });
   const database = await testDatabase();
   const push = new ConsolePushSender();
@@ -80,7 +84,7 @@ export async function setup(overrides: Partial<AppContext> = {}): Promise<TestEn
   };
   // A semester around today, so the tests keep working in any year.
   const day = (n: number) => new Date(Date.now() + 6 * 3600_000 + n * 86_400_000).toISOString().slice(0, 10);
-  const seeded = await seed(ctx.db, { adminPassword: ADMIN_PASSWORD, semester: { code: 'FALL-2026', name: 'Test semester', startsOn: day(-60), endsOn: day(60) } });
+  const seeded = await seed(ctx.db, { adminPassword: ADMIN_PASSWORD, timetable: opts.timetable ?? 'sample', semester: { code: 'FALL-2026', name: 'Test semester', startsOn: day(-60), endsOn: day(60) } });
   return { ctx, app: createApp(ctx), seeded, push, close: () => database.close() };
 }
 
@@ -106,7 +110,7 @@ export async function adminLogin(env: TestEnv, universityId = '710215', password
 
 export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-/** The nth service day after today in Dhaka (Fridays skipped). nextServiceDate(1) = next working day. */
+/** The nth day with trips after today in Dhaka, for the sample timetable (it has no Friday trips). */
 export function nextServiceDate(n = 1): string {
   const d = new Date(Date.now() + 6 * 3600_000);
   let k = 0;

@@ -26,7 +26,7 @@ Sign in as the transport office with *Fill in* on the login page (`710215` / `di
 **Transport office (web dashboard)**
 - Today's and the next 7 days' predicted riders in and out, per route, direction, time slot and audience, with the buses needed as only Hanif / only Monir / only Surjomukhi / mixed
 - Allocate buses slot by slot or *suggest* a whole day (optimizer), then publish; a bus already busy in an overlapping trip is never offered
-- Fleet, availability, routes, stops and time slots; semesters, fees and holidays
+- Fleet, availability, routes, stops and time slots; semesters, fees and holidays. Seeded with DIU's published timetable, Friday trips included ([assumptions](docs/10-risks-and-assumptions.md#102-assumptions-made-in-this-design))
 - Card requests (auto-approved after payment), one-day passes (first one per semester automatic), free access with a reason
 - Payments page with a daily list and Excel/CSV download; complaints and help requests; notices to everyone or one route; live bus map
 - Co-admins with fine-grained permissions, mandatory 2FA, full audit log
@@ -90,7 +90,7 @@ npm ci                                   # also turns on the git hooks that bloc
 npm run build -w @diu/shared
 
 cp apps/api/.env.example apps/api/.env   # then set JWT_SECRET and DATA_ENCRYPTION_KEY (commands are in the file)
-npm run db:seed -w @diu/api              # routes, 36 buses, time slots, fees; prints the admin password once
+npm run db:seed -w @diu/api              # DIU's 13 routes and timetable, 51 buses, fees; prints the admin password once
 npm run db:demo -w @diu/api              # optional: 940 riders with cards, payments, routines, tickets
 
 npm run dev:api                          # http://localhost:4000

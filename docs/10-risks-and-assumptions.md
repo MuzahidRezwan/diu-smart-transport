@@ -11,7 +11,7 @@
 | 5 | **Fee rules** per category and semester, refund rules, free-access policy | Accounts + transport office | Configured in the fee rules table. |
 | 6 | **Payment merchant account** (SSLCommerz store ID or bKash merchant) in the university's name, and where money settles | Accounts | We must not collect money into a personal account. |
 | 7 | **Bus list**: code, operator, seat count, registration, driver contact; Surjomukhi seat counts | Transport office | Capacity planning. |
-| 8 | **Routes, stops and slot timings** for each semester; shuttle details | Transport office | Schedule and map. |
+| 8 | **Routes, stops and slot timings** for each semester; shuttle details; stop coordinates and travel time per route | Transport office | Schedule and map. The seeded timetable is copied from the public transport page (see 10.2), but stop positions and trip durations are estimates. |
 | 9 | **Routine sources**: which departments publish where, in what format; a contact per department | Departments / Academic affairs | Ingestion. Ideally, an agreement to upload in our template. |
 | 10 | **Academic calendar** (holidays, exams) in a machine-readable form | Academic affairs | Prediction features. |
 | 11 | **GPS**: permission to install trackers (or use supervisor phones), who pays, which vendor | Transport office + operators | Live tracking. |
@@ -29,6 +29,9 @@
 6. Departments' routines identify student groups by **batch + section** (e.g. `41_G`) and teachers by **initial**.
 7. Users travel on the latest morning slot that reaches campus before their first class, and the first evening slot after their last class.
 8. Hall residents may still use routes on weekends; they have their own fee category.
+9. **Timetable.** The seed uses DIU's published schedule ([daffodilvarsity.edu.bd/transport](https://daffodilvarsity.edu.bd/transport), "Transport Schedule Final Exam, Semester: Spring-2026", last updated 2026-04-23): 10 regular routes (R1–R10) and 3 shuttles (R11–R13), to DSC at 7:00 AM, 10:00 AM and 1:00 PM and back at 11:20 AM, 2:30 PM and 5:30 PM, Saturday to Thursday, with the remarks on partial trips. Buses **do run on Friday**: to DSC at 7:30 AM, back at 11:30 AM and 4:30 PM (Savar route 11:50 AM and 4:50 PM). No weekday is treated as a holiday in code; a day without trips is simply a day with no slots, and holidays come from the academic calendar. The source lives in `apps/api/src/db/diu-timetable.ts`; tests use a small separate sample timetable. Confirm the current semester's timetable before go-live.
+10. The website's Friday table (F1 to F4, with F4 printed twice) is attached to the matching regular routes so riders keep their home route: F1 → R1 Dhanmondi, F4 → R2 Uttara-Rajlokkhi, F2 → R3 Tongi College Gate, F3 → R8 Savar, and the second F4 (Mirpur-10 → Sony) → R11. Where the Friday path differs, the trip carries a note. Confirm this mapping with the transport office.
+11. The 4:20 PM bus ("only for employees") is a staff-only trip. Every other trip is a regular trip that students and staff both ride, so staff demand and staff schedules include them.
 
 ## 10.3 Risks
 

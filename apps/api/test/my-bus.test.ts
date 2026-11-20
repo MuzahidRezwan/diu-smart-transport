@@ -20,9 +20,9 @@ async function myBus(direction: string) {
 }
 
 describe('My Bus', () => {
-  it('on the Friday holiday, points to the first bus on Saturday', async () => {
+  it('on a day without trips, points to the first bus of the next day with trips', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-11-20T06:00:00Z')); // Friday 12:00 in Dhaka
+    vi.setSystemTime(new Date('2026-11-20T06:00:00Z')); // Friday 12:00 in Dhaka; the sample timetable has no Friday trips
     const { body } = await myBus('to_campus');
     expect(body.isToday).toBe(false);
     expect(body.serviceDate).toBe('2026-11-21');
