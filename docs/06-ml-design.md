@@ -30,7 +30,7 @@ Routines give an upper bound. Actual riders are fewer and vary with weekday, exa
 
 Target: `rate = boarded / expected_max` for one slot on one day. Predicting a **rate** instead of a count keeps the model valid for routes and slot sizes it has not seen, and makes the routine count the scale.
 
-Features (`app/features.py`): expected_max, weekday, departure time, direction, audience, route duration, exam week, day next to a holiday/closure, and the slot's own history: mean and 90th-percentile show-up rate so far and how many observations there are. History features are computed **only from earlier days** (no leakage).
+Features (`app/features.py`): expected_max, weekday, departure time, direction, audience, route duration, exam week, day next to a holiday/closure, and the slot's own history: mean and 90th-percentile show-up rate so far and how many observations there are (capped at 20: past that it would only count days, and trees cannot extrapolate a counter beyond the training range, which made the P90 too low in backtests). History features are computed **only from earlier days** (no leakage).
 
 ## 6.4 Models
 

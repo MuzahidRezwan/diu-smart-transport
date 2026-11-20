@@ -110,3 +110,13 @@ def test_fetcher_blocks_unsafe_links(monkeypatch):
         check_url("https://evil.example.com/routine.pdf", resolve=public)
     with pytest.raises(FetchError):
         check_url("https://swe.daffodilvarsity.edu.bd/routine.pdf", resolve=private)
+
+
+def test_history_length_feature_is_capped():
+    # A raw day counter would act as a clock the trees cannot extrapolate past training.
+    from app.features import OBS_CAP
+    from app.train import rolling_frame
+    data = synthetic_input(seed=7)
+    dates = sorted({h["date"] for h in data["history"]})
+    frame = rolling_frame(dates, data["expected"], data["history"], data["slots"], data["calendar"])
+    assert frame["slot_obs"].max() == OBS_CAP

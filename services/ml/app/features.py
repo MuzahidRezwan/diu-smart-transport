@@ -9,6 +9,10 @@ import pandas as pd
 
 from .demand import weekday_js
 
+# History length matters until the slot mean is reliable; beyond that it only counts
+# days, and trees cannot extrapolate a counter past the training range.
+OBS_CAP = 20
+
 FEATURES = [
     "expected_max", "weekday", "departure_minutes", "is_incoming", "is_faculty", "duration_minutes",
     "is_exam_week", "holiday_adjacent", "slot_rate_mean", "slot_rate_p90", "slot_obs",
@@ -61,7 +65,7 @@ def build_frame(rows: list[dict], slots: dict[str, dict], calendar: list[dict], 
             "holiday_adjacent": hol,
             "slot_rate_mean": mean,
             "slot_rate_p90": p90,
-            "slot_obs": n,
+            "slot_obs": min(n, OBS_CAP),
             **({"boarded": r["boarded"]} if "boarded" in r else {}),
         })
     return pd.DataFrame(out)
