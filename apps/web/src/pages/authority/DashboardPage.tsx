@@ -17,7 +17,9 @@ export function DashboardPage() {
   const qc = useQueryClient();
   const toast = useToast();
   const today = todayDhaka();
-  const [date, setDate] = useState(today);
+  // On the weekly holiday there is nothing to plan today, so open on the next service day.
+  const firstServiceDay = isFriday(today) ? addDays(today, 1) : today;
+  const [date, setDate] = useState(firstServiceDay);
   const [aud, setAud] = useState<'student' | 'faculty'>('student');
   const [dir, setDir] = useState<'to_campus' | 'from_campus'>('to_campus');
   const [drawer, setDrawer] = useState<PredictionRow | null>(null);
@@ -91,10 +93,13 @@ export function DashboardPage() {
       <section className="grid gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="flex-1 text-lg">{date === today ? "Today's prediction" : `Prediction for ${dayLabel(date, true)}`}</h2>
-          {date !== today && <button className="btn" onClick={() => setDate(today)}>Back to today</button>}
+          <button className="btn" aria-label="Previous day" disabled={date <= today} onClick={() => setDate(addDays(date, -1))}>‹</button>
+          <button className="btn" aria-label="Next day" disabled={date >= addDays(today, 7)} onClick={() => setDate(addDays(date, 1))}>›</button>
+          {date !== firstServiceDay && <button className="btn" onClick={() => setDate(firstServiceDay)}>{firstServiceDay === today ? 'Back to today' : 'Back to next service day'}</button>}
           {can('predictions.run') && <button className="btn" disabled={refresh.isPending} onClick={() => refresh.mutate()}>{refresh.isPending ? 'Running…' : 'Re-run forecast'}</button>}
           <button className="btn btn-primary" onClick={() => setWeek(true)}>See next 7 days prediction</button>
         </div>
+        {isFriday(today) && date === firstServiceDay && <p className="muted">Today is the weekly holiday, so the next service day is shown.</p>}
         {refresh.error ? <ErrorNote error={refresh.error} /> : null}
         {isFriday(date) ? <Card><p className="muted">Weekly holiday. No trips are scheduled.</p></Card>
           : preds.isLoading ? <Loading what="Loading prediction" />
