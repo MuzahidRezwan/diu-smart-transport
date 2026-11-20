@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { and, asc, desc, eq, gte, inArray, or } from 'drizzle-orm';
 import { z } from 'zod';
-import { AUDIENCES, cardApplySchema, complaintCreateSchema, dayPassRequestSchema, dhakaMinutes, helpCreateSchema, isoDate } from '@diu/shared';
+import { AUDIENCES, addDays, cardApplySchema, complaintCreateSchema, dayPassRequestSchema, dhakaMinutes, helpCreateSchema, isoDate } from '@diu/shared';
 import type { AppContext } from '../../context.js';
 import {
   dayPasses, deviceTokens, notices, payments, routes, semesters, ticketMessages, tickets, transportCards, userProfiles, users,
@@ -150,16 +150,27 @@ export function meRouter(ctx: AppContext): Router {
     const now = dhakaMinutes();
     const direction = q.direction ?? (now < 12 * 60 ? 'to_campus' : 'from_campus');
     const aud = q.audience ?? (me.role === 'student' ? 'student' : 'faculty');
-    const day = await slotsForDay(db, today(), { routeId: user!.homeRouteId, audience: aud });
-    const next = day.slots.find((s) => s.direction === direction && s.departureMinutes >= now - 5) ?? null;
+    const todayIso = today();
+    const filter = { routeId: user!.homeRouteId, audience: aud } as const;
+    const day = await slotsForDay(db, todayIso, filter);
+    let next = day.slots.find((s) => s.direction === direction && s.departureMinutes >= now - 5) ?? null;
+    let serviceDate = todayIso;
+    // Nothing left today (evening, Friday, holiday): the first trip this way on the next service day.
+    for (let i = 1; !next && i <= 7; i++) {
+      const date = addDays(todayIso, i);
+      const later = (await slotsForDay(db, date, filter)).slots.filter((s) => s.direction === direction)
+        .sort((a, b) => a.departureMinutes - b.departureMinutes);
+      if (later[0]) { next = later[0]; serviceDate = date; }
+    }
+    const isToday = serviceDate === todayIso;
     let buses: { code: string; operatorCode: string; capacity: number }[] = [];
     const [card] = await db.select({ id: transportCards.id }).from(transportCards).innerJoin(semesters, eq(semesters.id, transportCards.semesterId))
       .where(and(eq(transportCards.userId, me.userId), eq(semesters.isCurrent, true), eq(transportCards.status, 'active')));
     if (next && card) {
-      const a = (await listAllocations(db, today(), true)).find((x) => x.timeSlotId === next.timeSlotId);
+      const a = (await listAllocations(db, serviceDate, true)).find((x) => x.timeSlotId === next!.timeSlotId);
       buses = a ? a.buses.map(({ code, operatorCode, capacity }) => ({ code, operatorCode, capacity })) : [];
     }
-    res.json({ closed: day.closed, direction, next, minutesUntil: next ? next.departureMinutes - now : null, buses, canSeeBuses: Boolean(card) });
+    res.json({ closed: day.closed, direction, next, serviceDate, isToday, minutesUntil: next && isToday ? next.departureMinutes - now : null, buses, canSeeBuses: Boolean(card) });
   });
 
   r.get('/live', async (req, res) => {
