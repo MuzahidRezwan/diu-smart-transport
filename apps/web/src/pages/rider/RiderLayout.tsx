@@ -12,7 +12,7 @@ export function RiderLayout() {
         <div className="min-w-0 flex-1"><b>{me?.name}</b><div className="muted truncate text-xs">ID {me?.universityId}{me?.profile.department ? ` · ${me.profile.department}` : ''}{me?.profile.batch ? ` · ${me.profile.batch}-${me.profile.section ?? ''}` : ''}</div></div>
         <button className="btn btn-sm" onClick={() => logout()}>Logout</button>
       </header>
-      <main className="grid content-start gap-3 px-4 pb-6"><Outlet /></main>
+      <main className="grid grid-cols-[minmax(0,1fr)] content-start gap-3 px-4 pb-6"><Outlet /></main>
       <nav className="sticky bottom-0 grid grid-cols-5 border-t border-line bg-surface px-1 pb-3 pt-1.5" aria-label="App">
         {NAV.map(([to, label]) => (
           <NavLink key={to} to={to} end={to === '/app'} className={({ isActive }) => `grid justify-items-center py-1.5 text-[11px] font-bold ${isActive ? 'text-accent' : 'text-muted'}`}>{label}</NavLink>

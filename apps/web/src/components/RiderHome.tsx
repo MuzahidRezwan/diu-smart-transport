@@ -21,7 +21,7 @@ const OPS: Record<string, string> = { H: 'Hanif', M: 'Monir', S: 'Surjomukhi' };
 export function RiderHome({ data, onDirection, readOnly }: { data: RiderHomeData; onDirection?(d: 'to_campus' | 'from_campus'): void; readOnly?: boolean }) {
   const stops = data.direction === 'to_campus' ? data.stops : [...data.stops].reverse();
   return (
-    <div className="grid gap-3">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
       <Segmented label="Direction" value={data.direction} onChange={(d) => onDirection?.(d)} options={[['to_campus', 'To campus'], ['from_campus', 'To home']]} />
       {data.closed && <div className="card"><b>No buses today: {data.closed}</b></div>}
       {!data.next ? (
