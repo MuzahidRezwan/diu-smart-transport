@@ -56,3 +56,20 @@ def test_faculty_are_matched_by_teacher_initial():
     slots = [slot("fin", "to_campus", 450, aud="faculty"), slot("fout", "from_campus", 1020, aud="faculty")]
     d = expected_demand([SAT], [fac], sessions, slots, [])
     assert dict(d.counts) == {(SAT, "fin"): 1, (SAT, "fout"): 1}
+
+
+def test_staff_ride_regular_buses_and_the_employee_bus():
+    # DIU style: no staff-only trip in the morning, a 4:20 PM employee bus in the afternoon.
+    fac = Rider(rider_key="f", audience="faculty", route_id="R-01", teacher_initial="MRH")
+    early_end = [Session(department="SWE", batch="41", section="G", teacher_initial="MRH", weekday=6, start_minutes=600, end_minutes=930)]  # 10:00-15:30
+    slots = SLOTS + [slot("emp-1620", "from_campus", 980, aud="faculty")]
+    d = expected_demand([SAT], [fac], early_end, slots, [])
+    assert dict(d.counts) == {(SAT, "in-0830"): 1, (SAT, "emp-1620"): 1}
+    assert d.unserved_in == 0 and d.unserved_out == 0
+
+
+def test_students_never_get_staff_only_trips():
+    sessions = [Session(department="SWE", batch="41", section="G", weekday=6, start_minutes=510, end_minutes=930)]  # ends 15:30
+    slots = [slot("in-0700", "to_campus", 420), slot("emp-1620", "from_campus", 980, aud="faculty"), slot("out-1730", "from_campus", 1050)]
+    d = expected_demand([SAT], [KHALIL], sessions, slots, [])
+    assert dict(d.counts) == {(SAT, "in-0700"): 1, (SAT, "out-1730"): 1}

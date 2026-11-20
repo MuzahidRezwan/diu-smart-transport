@@ -8,7 +8,7 @@ Code: [`services/ml`](../services/ml). Run `python -m app.train --synthetic` to 
 
 | Layer | What it answers | Method | Needs |
 |---|---|---|---|
-| 1. Expected demand ("routine max") | Who *could* ride each trip? | Rules: match each card holder's batch/section (or teacher initial) to the routine, pick the latest bus that reaches DSC 10 min before the first class and the first bus 5 min after the last class | Routines + card holders |
+| 1. Expected demand ("routine max") | Who *could* ride each trip? | Rules: match each card holder's batch/section (or teacher initial) to the routine, pick the latest bus that reaches DSC 10 min before the first class and the first bus 5 min after the last class. Students use student trips; staff use those and staff-only trips (DIU's 4:20 PM employee bus) | Routines + card holders |
 | 2. Ridership forecast | How many *will* ride? | ML: gradient-boosted trees predict the **show-up rate** (mean and 90th percentile) | Boarding scans (history), calendar |
 | 3. Allocation | Which buses go where? | Optimization: mixed-integer program | Layer 2 output + available fleet |
 

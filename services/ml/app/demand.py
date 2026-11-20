@@ -95,7 +95,14 @@ def expected_demand(dates: list[str], riders: list[Rider], sessions: list[Sessio
             first = min(s.start_minutes for s in mine)
             last = max(s.end_minutes for s in mine)
 
-            incoming = [s for s in slots_by_route.get((r.route_id, r.audience, "to_campus"), []) if wd in s.weekdays]
+            def trips(direction: str) -> list[Slot]:
+                # Staff ride the regular buses as well as staff-only trips (such as DIU's
+                # 4:20 PM "only for employees" bus); students ride the regular buses only.
+                kinds = [r.audience] if r.audience == "student" else [r.audience, "student"]
+                found = [s for a in kinds for s in slots_by_route.get((r.route_id, a, direction), []) if wd in s.weekdays]
+                return sorted(found, key=lambda s: s.departure_minutes)
+
+            incoming = trips("to_campus")
             if incoming:
                 on_time = [s for s in incoming if s.departure_minutes + s.duration_minutes <= first - ARRIVAL_BUFFER]
                 pick = on_time[-1] if on_time else incoming[0]  # nothing early enough: they take the first bus
@@ -103,7 +110,7 @@ def expected_demand(dates: list[str], riders: list[Rider], sessions: list[Sessio
             else:
                 out.unserved_in += 1
 
-            outgoing = [s for s in slots_by_route.get((r.route_id, r.audience, "from_campus"), []) if wd in s.weekdays]
+            outgoing = trips("from_campus")
             after = [s for s in outgoing if s.departure_minutes >= last + WALK_BUFFER]
             if after:
                 out.counts[(d, after[0].time_slot_id)] += 1
