@@ -12,7 +12,7 @@
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,18 +28,26 @@ const children = [];
 const say = (msg) => console.log(`\x1b[36m›\x1b[0m ${msg}`);
 const fail = (msg) => { console.error(`\x1b[31m✖ ${msg}\x1b[0m`); stop(1); };
 
+/**
+ * One command line for cmd.exe. Windows needs a shell for npm and npx (they are .cmd
+ * files). Every argument with a space or a character cmd.exe treats specially
+ * (> < | & ^ ( )) is quoted, so C:\Users\…\AI Works\… stays one argument and ">="
+ * is never read as a redirect. Passing one string also avoids Node's DEP0190 warning.
+ */
+const shellLine = (cmd, cmdArgs) => [cmd, ...cmdArgs].map((a) => (/[\s"&|<>^()]/.test(a) ? `"${a.replace(/"/g, '""')}"` : a)).join(' ');
+
 function run(cmd, cmdArgs, opts = {}) {
-  // Windows needs a shell for npm/npx/py; a shell splits on spaces, so quote paths like C:\Users\Muzahid Rezwan\…
   const shell = WIN && !isAbsolute(cmd);
-  const finalArgs = shell ? cmdArgs.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : cmdArgs;
-  const r = spawnSync(cmd, finalArgs, { cwd: ROOT, stdio: opts.quiet ? 'pipe' : 'inherit', shell, env: { ...process.env, ...opts.env } });
+  const common = { cwd: ROOT, stdio: opts.quiet ? 'pipe' : 'inherit', env: { ...process.env, ...opts.env } };
+  const r = shell ? spawnSync(shellLine(cmd, cmdArgs), { ...common, shell: true }) : spawnSync(cmd, cmdArgs, common);
   if (r.status !== 0) fail(`${cmd} ${cmdArgs.join(' ')} failed${opts.quiet ? `:\n${r.stderr?.toString().slice(-2000)}` : ''}`);
   return r;
 }
 
 /** Starts a long-running child. Its output goes to this console unless `capture` asks for it. */
 function start(name, cmd, cmdArgs, opts, capture = false) {
-  const child = spawn(cmd, cmdArgs, { stdio: ['ignore', capture ? 'pipe' : 'inherit', capture ? 'pipe' : 'inherit'], ...opts });
+  const stdio = ['ignore', capture ? 'pipe' : 'inherit', capture ? 'pipe' : 'inherit'];
+  const child = opts.shell ? spawn(shellLine(cmd, cmdArgs), { stdio, ...opts, shell: true }) : spawn(cmd, cmdArgs, { stdio, ...opts });
   let tail = '';
   if (capture) for (const s of [child.stdout, child.stderr]) s.on('data', (d) => { tail = (tail + d.toString()).slice(-1500); });
   child.on('exit', (code) => {
@@ -67,10 +75,26 @@ async function waitFor(url, seconds) {
   return false;
 }
 
+/** True if this Python runs and is 3.11 or newer. No shell: cmd.exe would read ">=" as a redirect. */
+const pythonOk = (cmd, pre = []) => spawnSync(cmd, [...pre, '-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'], { stdio: 'ignore', windowsHide: true }).status === 0;
+
+/**
+ * A Python 3.11+ to create the environment with, as an absolute path: from PATH, the
+ * py launcher, or (Windows) the default install folders, in case it is not on PATH.
+ */
 function findPython() {
-  for (const [cmd, pre] of [['python3', []], ['python', []], ['py', ['-3']]]) {
-    const r = spawnSync(cmd, [...pre, '-c', 'import sys; print(sys.version_info[:2] >= (3, 11))'], { shell: WIN, encoding: 'utf8' });
-    if (r.status === 0 && r.stdout.trim() === 'True') return [cmd, pre];
+  const candidates = [['python3', []], ['python', []], ['py', ['-3']]];
+  if (WIN) {
+    for (const base of [join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Python'), process.env.ProgramFiles ?? 'C:\\Program Files']) {
+      let names = [];
+      try { names = readdirSync(base); } catch { /* not installed there */ }
+      for (const n of names.filter((x) => /^Python3\d+$/i.test(x))) candidates.push([join(base, n, 'python.exe'), []]);
+    }
+  }
+  for (const [cmd, pre] of candidates) {
+    if (!pythonOk(cmd, pre)) continue;
+    const r = spawnSync(cmd, [...pre, '-c', 'import sys; print(sys.executable)'], { encoding: 'utf8', windowsHide: true });
+    if (r.status === 0 && r.stdout.trim()) return r.stdout.trim();
   }
   return null;
 }
@@ -117,13 +141,18 @@ const ml = join(ROOT, 'services', 'ml');
 const venvPython = join(ml, '.venv', WIN ? 'Scripts' : 'bin', WIN ? 'python.exe' : 'python');
 const modelDir = join(ml, 'artifacts');
 let mlReady = false;
-const python = findPython();
-if (!python) {
+// An environment made on an earlier run is enough; a system Python is only needed to create one.
+const venvReady = existsSync(venvPython) && pythonOk(venvPython);
+const python = venvReady ? null : findPython();
+if (!venvReady && !python) {
   console.warn('\x1b[33m! Python 3.11+ not found: running without the ML service (no predictions). Install Python from https://python.org and run again.\x1b[0m');
 } else {
   const reqHash = createHash('sha256').update(readFileSync(join(ml, 'requirements.txt'))).digest('hex');
   const stamp = join(ml, '.venv', '.demo-requirements');
-  if (!existsSync(venvPython)) { say('Creating the Python environment (first run only)…'); run(python[0], [...python[1], '-m', 'venv', join(ml, '.venv')]); }
+  if (!venvReady) {
+    say('Creating the Python environment (first run only)…');
+    run(python, ['-m', 'venv', ...(existsSync(join(ml, '.venv')) ? ['--clear'] : []), join(ml, '.venv')]); // --clear replaces a broken one
+  }
   if (!existsSync(stamp) || readFileSync(stamp, 'utf8') !== reqHash) {
     say('Installing ML libraries (first run only, a few minutes)…');
     run(venvPython, ['-m', 'pip', 'install', '--quiet', '--disable-pip-version-check', '-r', join(ml, 'requirements.txt')]);
